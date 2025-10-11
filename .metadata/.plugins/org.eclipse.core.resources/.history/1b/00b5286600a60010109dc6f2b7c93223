@@ -1,0 +1,5 @@
+package pbl4.common.model;
+
+public class Client {
+
+}
