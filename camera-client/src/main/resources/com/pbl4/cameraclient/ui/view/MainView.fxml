@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.pbl4.cameraclient.ui.controller.MainViewController">
+   <left>
+      <VBox prefWidth="200.0" spacing="10.0" style="-fx-background-color: #f4f4f4; -fx-padding: 10;">
+         <children>
+            <Label text="Danh sách Camera">
+               <font>
+                  <Font name="System Bold" size="16.0" />
+               </font>
+            </Label>
+            </children>
+      </VBox>
+   </left>
+   <center>
+      <Label text="Màn hình chính - Xem Console để thấy kết quả đồng bộ" BorderPane.alignment="CENTER">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Label>
+   </center>
+</BorderPane>
