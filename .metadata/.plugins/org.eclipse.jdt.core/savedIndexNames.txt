@@ -1,7 +1,0 @@
-INDEX VERSION 1.134+C:\Users\Lenovo Legion\git\PBL4\.metadata\.plugins\org.eclipse.jdt.core
-1794971479.index
-1865797976.index
-1240815900.index
-3388572774.index
-1213555539.index
-4157916916.index
