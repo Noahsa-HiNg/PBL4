@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**") // Áp dụng cho tất cả API bắt đầu bằng /api/
                 .allowedOrigins( // Liệt kê CHÍNH XÁC các nguồn gốc được phép
                     "http://127.0.0.1:5500",
-                    "http://localhost:5500"
+                    "http://localhost:5500"              
                     // Thêm các nguồn gốc khác nếu cần
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Các phương thức HTTP
