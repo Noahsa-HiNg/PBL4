@@ -26,19 +26,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const loginData = await loginUser(username, password);
 
             // 2. Xử lý đăng nhập thành công
-            if (loginData && loginData.token) { // Giả sử server trả về token
+            if (loginData.token) { // Giả sử server trả về token
                 console.log("Lưu token:", loginData.token);
                 // Lưu token vào localStorage để dùng cho các request sau
                 localStorage.setItem('authToken', loginData.token); 
                 
                 // Lưu thông tin user (nếu có) để biết role
-                if (loginData.user) {
-                    console.log("Lưu user info:", loginData.user);
-                    localStorage.setItem('userInfo', JSON.stringify(loginData.user));
+                if (loginData.username) {
+                    console.log("Lưu user info:", loginData.username);
+                    localStorage.setItem('userInfo', JSON.stringify(loginData.username));
                 }
 
                 // Chuyển hướng đến trang chính
-                window.location.href = 'index.html'; 
+                window.location.href = 'live_feed.html'; 
             } else {
                  // Trường hợp server không trả về token như mong đợi
                  showError('Phản hồi từ server không hợp lệ.');

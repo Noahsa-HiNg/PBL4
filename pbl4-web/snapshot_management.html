@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho ảnh đã chụp - Hệ thống Giám sát</title>
+    
+    <link rel="stylesheet" href="/assets/css/style.css"> 
+    
+    <script src="/assets/js/auth.js"></script> 
+    
+    <style>
+        .loading-placeholder {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-text-secondary);
+            grid-column: 1 / -1; 
+        }
+
+        /* Tùy chỉnh cho thư viện ảnh */
+        .image-card {
+            background-color: var(--color-background-muted);
+            border-radius: var(--border-radius-main);
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+        }
+        .image-card img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+            background-color: var(--color-gray-300);
+        }
+        .image-card-info {
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+        .image-card-info p {
+            margin: 0;
+            color: var(--color-text-secondary);
+        }
+        .image-card-info strong {
+            color: var(--color-text-primary);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* CSS cho Phân trang (Pagination) */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+        }
+        .pagination-controls .btn:disabled {
+            background-color: var(--color-gray-300);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #page-info {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="live_feed.html">Live Camera Feed</a>
+            <a href="snapshot_management.html" class="active">Snapshot Management</a>
+            <a href="upload_history.html">Upload History</a>
+            <a href="user_settings.html">User Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title">Kho ảnh đã chụp</h1>
+        
+        <div class="gallery-grid" id="gallery-grid">
+            <p class="loading-placeholder">Đang tải thư viện ảnh...</p>
+        </div>
+        
+        <div class="pagination-controls" id="pagination-controls">
+            <button class="btn btn-secondary" id="prev-page-btn" disabled>Trang trước</button>
+            <span id="page-info">Trang 1 / 1</span>
+            <button class="btn btn-secondary" id="next-page-btn" disabled>Trang sau</button>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>© 2025 Surveillance System. All rights reserved.</span>
+        <nav>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+        </nav>
+    </footer>
+
+    <script src="/assets/js/config.js"></script>
+    
+    <script src="/assets/js/api.js"></script> 
+
+    <script>
+        const galleryGrid = document.getElementById('gallery-grid');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfo = document.getElementById('page-info');
+
+        // Biến toàn cục để lưu trang hiện tại
+        let currentPage = 0;
+
+        // Chờ HTML tải xong thì tải ảnh trang đầu tiên
+        document.addEventListener('DOMContentLoaded', () => {
+            loadImages(currentPage);
+        });
+
+        /**
+         * Hàm chính: Tải ảnh cho một trang cụ thể
+         * @param {number} page Số trang (bắt đầu từ 0)
+         */
+        async function loadImages(page) {
+            currentPage = page; // Cập nhật trang hiện tại
+            galleryGrid.innerHTML = '<p class="loading-placeholder">Đang tải thư viện ảnh...</p>'; // Hiển thị loading
+            
+            try {
+                // 1. Gọi API (giả hoặc thật)
+                // Giả sử mỗi trang 6 ảnh
+                const size = 6; 
+                const pageData = await getImageList(page, size);
+
+                if (!pageData.content || pageData.content.length === 0) {
+                    galleryGrid.innerHTML = '<p class="loading-placeholder">Không tìm thấy ảnh nào.</p>';
+                    updatePagination(pageData); // Cập nhật (vô hiệu hóa) nút
+                    return;
+                }
+
+                galleryGrid.innerHTML = ''; // Xóa chữ "Đang tải..."
+
+                // 2. "Vẽ" các thẻ ảnh
+                pageData.content.forEach(image => {
+                    const timestamp = new Date(image.capturedAt).toLocaleString('vi-VN');
+
+                    const imageCardHTML = `
+                        <div class="image-card">
+                            <img src="${image.filePath}" alt="${image.imageName}">
+                            <div class="image-card-info">
+                                <strong>${image.imageName}</strong>
+                                <p>Camera ID: ${image.cameraId}</p>
+                                <p>Thời gian: ${timestamp}</p>
+                            </div>
+                        </div>
+                    `;
+                    galleryGrid.insertAdjacentHTML('beforeend', imageCardHTML);
+                });
+
+                // 3. Cập nhật các nút phân trang
+                updatePagination(pageData);
+
+            } catch (error) {
+                console.error('Lỗi khi tải thư viện ảnh:', error);
+                galleryGrid.innerHTML = `<p class="loading-placeholder" style="color: var(--color-status-danger);">Không thể tải thư viện: ${error.message}</p>`;
+            }
+        }
+
+        /**
+         * Cập nhật trạng thái các nút phân trang
+         * @param {object} pageData Đối tượng Page<> từ API
+         */
+        function updatePagination(pageData) {
+            if (!pageData) {
+                prevPageBtn.disabled = true;
+                nextPageBtn.disabled = true;
+                pageInfo.textContent = 'Trang 1 / 1';
+                return;
+            }
+
+            // `pageData.number` là trang hiện tại (từ 0)
+            // `pageData.totalPages` là tổng số trang
+            pageInfo.textContent = `Trang ${pageData.number + 1} / ${pageData.totalPages}`;
+
+            // Nếu là trang đầu tiên, vô hiệu hóa nút "Trước"
+            prevPageBtn.disabled = pageData.first; 
+            
+            // Nếu là trang cuối cùng, vô hiệu hóa nút "Sau"
+            nextPageBtn.disabled = pageData.last;
+        }
+
+        // Thêm sự kiện click cho các nút
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 0) {
+                loadImages(currentPage - 1);
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            // (Chúng ta không cần kiểm tra vì nút đã bị vô hiệu hóa)
+            loadImages(currentPage + 1);
+        });
+    </script>
+</body>
+</html>

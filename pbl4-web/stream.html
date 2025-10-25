@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream - Hệ thống Giám sát</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <style>
+        .video-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #000;
+        }
+        .video-container img { /* Dùng thẻ <img> cho stream MJPEG */
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .stream-title {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+         <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="live_feed.html" class="active">Live Camera Feed</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="upload_history.html">Upload History</a>
+            <a href="user_settings.html">User Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title stream-title" id="camera-name-title">Đang tải...</h1>
+        
+        <div class="video-container">
+            <img id="live-video-feed" src="" alt="Live video feed">
+        </div>
+    </main>
+    
+    <footer class="app-footer"> ... </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Lấy "cameraId=X" từ URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const cameraId = urlParams.get('cameraId');
+
+            if (!cameraId) {
+                document.getElementById('camera-name-title').innerText = "Không tìm thấy ID Camera";
+                return;
+            }
+
+            loadCameraDetails(cameraId);
+        });
+
+        async function loadCameraDetails(id) {
+            try {
+                // 2. Gọi API để lấy thông tin 1 camera
+                const response = await fetch(`/api/cameras/${id}`);
+                if (!response.ok) throw new Error('Không tìm thấy camera');
+                
+                const camera = await response.json();
+
+                // 3. Cập nhật tiêu đề
+                document.getElementById('camera-name-title').innerText = `Live Stream: ${camera.cameraName}`;
+
+                // 4. Đặt nguồn video
+                // Bạn cần tự định nghĩa API stream này trong backend
+                const videoStreamUrl = `/api/cameras/stream/${id}`; 
+                document.getElementById('live-video-feed').src = videoStreamUrl;
+            
+            } catch (error) {
+                console.error('Lỗi:', error);
+                document.getElementById('camera-name-title').innerText = "Lỗi khi tải camera";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình Client</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script src="/assets/js/auth.js"></script>
+    <style>
+        /* CSS cho Modal (form ẩn) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none; /* Ẩn ban đầu */
+            align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--color-background-surface);
+            padding: 2rem;
+            border-radius: var(--border-radius-main);
+            width: 90%; max-width: 600px;
+        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    </style>
+</head>
+<body>
+    <header class="app-header"> ... </header> <main>
+        <h1 class="page-title">Quản lý & Cấu hình Client</h1>
+        <table class="data-table" id="clients-table">
+            <thead>
+                <tr>
+                    <th>Tên Client</th>
+                    <th>Trạng thái</th>
+                    <th>Cấu hình (WxH @ Q)</th>
+                    <th>Khoảng nghỉ</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </main>
+    <footer class="app-footer"> ... </footer>
+
+    <div class="modal-overlay" id="client-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Chỉnh sửa Cấu hình Client</h2>
+            <form id="client-form">
+                <input type="hidden" id="clientId">
+                
+                <div class="form-group">
+                    <label for="clientName">Tên Client</label>
+                    <input type="text" id="clientName" class="form-control" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="imageWidth">Rộng (px)</label>
+                        <input type="number" id="imageWidth" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="imageHeight">Cao (px)</label>
+                        <input type="number" id="imageHeight" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="interval">Khoảng nghỉ (giây)</label>
+                        <input type="number" id="interval" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="quality">Chất lượng (%)</label>
+                        <input type="number" id="quality" class="form-control" min="1" max="100">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Lưu Cấu hình</button>
+                <button type="button" class="btn btn-secondary" id="close-modal-btn">Hủy</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        const tableBody = document.querySelector("#clients-table tbody");
+        const modal = document.getElementById('client-modal');
+        const modalForm = document.getElementById('client-form');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        document.addEventListener('DOMContentLoaded', loadClients);
+
+        async function loadClients() {
+            try {
+                const clients = await getClientList(); // Từ api-mock.js
+                tableBody.innerHTML = ''; // Xóa bảng cũ
+                
+                clients.forEach(client => {
+                    const statusClass = client.status === 'online' ? 'status-success' : 'status-danger';
+                    const configStr = `${client.imageWidth}x${client.imageHeight} @ ${client.compressionQuality}%`;
+                    const intervalStr = `${client.captureIntervalSeconds} giây`;
+                    
+                    const row = `
+                        <tr>
+                            <td><strong>${client.clientName}</strong></td>
+                            <td><span class="${statusClass}">${client.status}</span></td>
+                            <td>${configStr}</td>
+                            <td>${intervalStr}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="openEditModal(${client.id})">
+                                    Cấu hình
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="5">Lỗi tải clients: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Mở Modal để chỉnh sửa
+        async function openEditModal(id) {
+            try {
+                const client = await getClientById(id); // Từ api-mock.js
+                
+                // Đổ dữ liệu vào form
+                document.getElementById('clientId').value = client.id;
+                document.getElementById('clientName').value = client.clientName;
+                document.getElementById('imageWidth').value = client.imageWidth;
+                document.getElementById('imageHeight').value = client.imageHeight;
+                document.getElementById('interval').value = client.captureIntervalSeconds;
+                document.getElementById('quality').value = client.compressionQuality;
+                
+                modal.style.display = 'flex'; // Hiển thị modal
+            } catch (error) {
+                alert("Lỗi: " + error.message);
+            }
+        }
+        
+        // Đóng Modal
+        closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+
+        // Khi Submit form (Lưu cấu hình)
+        modalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('clientId').value;
+            const data = {
+                clientName: document.getElementById('clientName').value,
+                imageWidth: parseInt(document.getElementById('imageWidth').value),
+                imageHeight: parseInt(document.getElementById('imageHeight').value),
+                captureIntervalSeconds: parseInt(document.getElementById('interval').value),
+                compressionQuality: parseInt(document.getElementById('quality').value)
+            };
+
+            try {
+                // Gọi API (giả) để cập nhật
+                await updateClient(id, data);
+                
+                modal.style.display = 'none'; // Ẩn modal
+                loadClients(); // Tải lại bảng
+                
+            } catch (error) {
+                alert("Lỗi lưu: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

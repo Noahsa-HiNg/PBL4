@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cài đặt Người dùng</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script src="/assets/js/auth.js"></script>
+</head>
+<body>
+    <header class="app-header"> ... </header> <main>
+        <h1 class="page-title">Cài đặt Tài khoản</h1>
+        <div style="max-width: 600px;">
+            <form id="settings-form">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" class="form-control" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Cập nhật Email</button>
+            </form>
+            
+            <hr style="margin: 2rem 0;">
+            
+            <button class="btn btn-danger" id="logout-btn">Đăng xuất</button>
+        </div>
+    </main>
+    <footer class="app-footer"> ... </footer>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        const settingsForm = document.getElementById('settings-form');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Tải thông tin user hiện tại
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await getCurrentUser(); // Từ api-mock.js
+                document.getElementById('userId').value = user.id;
+                document.getElementById('username').value = user.username;
+                document.getElementById('email').value = user.email;
+            } catch (error) {
+                alert("Lỗi tải thông tin user: " + error.message);
+            }
+        });
+
+        // Xử lý Cập nhật
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const data = {
+                email: document.getElementById('email').value
+            };
+            
+            try {
+                await updateUser(id, data); // Từ api-mock.js
+                alert("Cập nhật email thành công!");
+            } catch (error) {
+                alert("Lỗi cập nhật: " + error.message);
+            }
+        });
+
+        // Xử lý Đăng xuất
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await logoutUser(); // Từ api-mock.js
+                window.location.href = 'login.html'; // Quay về trang login
+            } catch (error) {
+                alert("Lỗi đăng xuất.");
+            }
+        });
+    </script>
+</body>
+</html>

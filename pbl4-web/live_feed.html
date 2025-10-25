@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách Camera - Hệ thống Giám sát</title>
+    
+    <link rel="stylesheet" href="assets/css/style.css"> 
+    
+    <style>
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: var(--color-status-success);
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .status-indicator.offline {
+             background-color: var(--color-status-danger);
+        }
+        
+        .loading-placeholder {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-text-secondary);
+            grid-column: 1 / -1; /* Hiển thị toàn chiều rộng grid */
+        }
+
+        /* Biến toàn bộ card thành một link */
+        .camera-link-card {
+            text-decoration: none; /* Bỏ gạch chân của link */
+            color: inherit; /* Lấy màu chữ mặc định (màu đen) */
+            display: block; 
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: var(--border-radius-main); 
+        }
+        .camera-link-card:hover {
+            transform: translateY(-5px); /* Hiệu ứng nhấc lên */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* * Áp dụng style của .card (từ CSS chung) vào bên trong link <a> 
+         * Bằng cách lồng các class đã được định nghĩa trong style.css
+         */
+        .camera-link-card .card {
+             /* * Các thuộc tính như background-color, border-radius, box-shadow
+              * đã được định nghĩa trong tệp CSS chung của bạn.
+              * Chúng ta không cần định nghĩa lại chúng ở đây.
+              */
+             padding: 0; /* Ghi đè padding của .card gốc nếu có */
+             overflow: hidden; /* Đảm bảo ảnh bo góc đúng */
+         }
+
+         .camera-link-card .card img {
+             /* Đã được định nghĩa trong .card img của CSS chung */
+             margin-bottom: 0; /* Xóa margin nếu có */
+         }
+
+        .camera-link-card .card-content {
+             /* Đã được định nghĩa trong .card-content của CSS chung */
+             /* Style cho nội dung bên dưới ảnh */
+         }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="live_feed.html" class="active">Live Camera Feed</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="upload_history.html">Upload History</a>
+            <a href="user_settings.html">User Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="live-camera-feeds">
+            <h1 class="page-title">Danh sách Camera</h1>
+            
+            <div class="card-grid" id="camera-feed-grid">
+                <p class="loading-placeholder">Đang tải danh sách camera...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <span>© 2025 Surveillance System. All rights reserved.</span>
+        <nav>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+        </nav>
+    </footer>
+
+    <script src="assets/js/config.js"></script>
+    
+    <script src="assets/js/api.js"></script>
+
+    <script>
+        // Chờ cho toàn bộ nội dung HTML được tải xong
+        document.addEventListener('DOMContentLoaded', () => {
+            // Gọi hàm loadCameras() được định nghĩa bên dưới
+            loadCameras();
+        });
+
+        /**
+         * Hàm này là trình bao bọc (wrapper)
+         * Nó gọi hàm `getCameraList` từ api.js và xử lý việc hiển thị 
+         * dữ liệu lên HTML.
+         */
+        async function loadCameras() {
+            const cameraGrid = document.getElementById('camera-feed-grid');
+            
+            try {
+                // *** THAY ĐỔI CHÍNH ***
+                // Gọi hàm từ api.js
+                // Hàm này đã bao gồm cả việc xử lý token/lỗi 401
+                const cameras = await getCameraList(); 
+
+                if (!cameras || cameras.length === 0) {
+                    cameraGrid.innerHTML = '<p class="loading-placeholder">Không tìm thấy camera nào.</p>';
+                    return;
+                }
+
+                cameraGrid.innerHTML = ''; // Xóa chữ "Đang tải..."
+
+                // Lặp qua mảng cameras và tạo HTML
+                cameras.forEach(camera => {
+                    // Giả sử DTO của bạn có trường `active` (boolean)
+                    const statusClass = camera.active ? '' : 'offline'; 
+                    const statusTitle = camera.active ? 'Online' : 'Offline';
+                    
+                    // Link đến trang xem stream chi tiết
+                    const liveStreamUrl = `stream.html?cameraId=${camera.id}`; 
+
+                    // Bọc toàn bộ .card bằng thẻ <a>
+                    const cameraCardHTML = `
+                        <a href="${liveStreamUrl}" class="camera-link-card">
+                            
+                            <div class="card"> 
+                                <img src="/placeholder-live.jpg" alt="${camera.cameraName} Feed">
+                                <div class="card-content">
+                                    <div>
+                                        <strong>${camera.cameraName}</strong>
+                                        <span class="status-indicator ${statusClass}" title="${statusTitle}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                    
+                    cameraGrid.insertAdjacentHTML('beforeend', cameraCardHTML);
+                });
+
+            } catch (error) {
+                console.error('Lỗi khi tải camera (từ live_feed.js):', error);
+                
+                // Hiển thị lỗi mà api.js đã ném ra
+                cameraGrid.innerHTML = `
+                    <p class="loading-placeholder" style="color: var(--color-status-danger);">
+                        Không thể tải danh sách camera: <br>
+                        ${error.message}
+                    </p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
