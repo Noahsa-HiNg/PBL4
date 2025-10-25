@@ -5,6 +5,9 @@ import com.pbl4.server.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pbl4.common.model.User; // DTO
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import io.jsonwebtoken.lang.Arrays;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -78,4 +81,5 @@ public class UserService {
         // KHÔNG BAO GIỜ trả về password hash
         return dto;
     }
+
 }
