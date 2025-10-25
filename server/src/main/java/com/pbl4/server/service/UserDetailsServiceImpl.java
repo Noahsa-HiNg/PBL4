@@ -1,32 +1,44 @@
-package com.pbl4.server.service;
+package com.pbl4.server.service; // Hoặc package của UserDetailsServiceImpl
 
-import com.pbl4.server.entity.UserEntity;
+import com.pbl4.server.entity.UserEntity; // Import Entity
 import com.pbl4.server.repository.UserRepository;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority; // Import đúng
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList; // Hoặc dùng Collections.emptyList()
+import org.springframework.transaction.annotation.Transactional; // Nên có
+
+import java.util.Arrays; // Import đúng
+import java.util.List;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public UserDetailsServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    @Override
+    @Override // Thêm @Override
+    @Transactional // Đảm bảo hoạt động trong 1 transaction
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 1. Tìm UserEntity trong DB
+        System.out.println("Attempting to load user: " + username); // Log 1
+
+        // Sử dụng UserEntity
         UserEntity userEntity = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
 
-        // 2. Tạo đối tượng UserDetails mà Spring Security hiểu
-        // Tham số: username, password hash (từ DB), danh sách quyền hạn (roles/authorities)
-        // Hiện tại dùng danh sách quyền hạn rỗng. Bạn có thể thêm role vào đây nếu cần phân quyền chi tiết.
-        return new User(userEntity.getUsername(), userEntity.getPasswordHash(), new ArrayList<>());
+        System.out.println("User found: " + userEntity.getUsername()); // Log 2
+        System.out.println("Password hash from DB: " + userEntity.getPasswordHash()); // Log 3
+
+        // Tạo danh sách quyền hạn
+        List<GrantedAuthority> authorities = Arrays.asList(new SimpleGrantedAuthority(userEntity.getRole()));
+
+        // Trả về đối tượng UserDetails của Spring Security
+        return new org.springframework.security.core.userdetails.User(
+                userEntity.getUsername(),
+                userEntity.getPasswordHash(), // Lấy hash từ Entity
+                authorities);
     }
 }
