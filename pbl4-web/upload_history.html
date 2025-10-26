@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử Upload Ảnh</title>
+    <link rel="stylesheet" href="/assets/css/style.css"> <script src="/assets/js/auth.js"></script> <style>
+        .loading-placeholder { text-align: center; padding: 2rem; color: var(--color-text-secondary); }
+        .thumbnail-preview { width: 80px; height: auto; border-radius: 4px; vertical-align: middle; margin-right: 10px; }
+        .pagination-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+        .pagination-controls .btn:disabled { background-color: var(--color-gray-300); cursor: not-allowed; opacity: 0.7; }
+        #page-info { font-weight: 600; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="live_feed.html">Live Camera Feed</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="upload_history.html" class="active">Upload History</a>
+            <a href="user_settings.html">User Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title">Lịch sử Upload Ảnh</h1>
+
+        <table class="data-table" id="history-table">
+            <thead>
+                <tr>
+                    <th>Ảnh xem trước</th>
+                    <th>Tên File gốc</th>
+                    <th>Camera ID</th>
+                    <th>Thời gian chụp</th>
+                    <th>Thời gian Upload</th>
+                    <th>Kích thước</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6"><p class="loading-placeholder">Đang tải lịch sử...</p></td></tr>
+            </tbody>
+        </table>
+
+        <div class="pagination-controls" id="pagination-controls">
+            <button class="btn btn-secondary" id="prev-page-btn" disabled>Trang trước</button>
+            <span id="page-info">Trang 1 / 1</span>
+            <button class="btn btn-secondary" id="next-page-btn" disabled>Trang sau</button>
+        </div>
+    </main>
+
+    <footer class="app-footer"> ... </footer> <script src="config.js"></script>
+    <script src="/assets/js/api.js"></script> <script>
+        const tableBody = document.querySelector("#history-table tbody");
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfo = document.getElementById('page-info');
+        let currentPage = 0;
+
+        document.addEventListener('DOMContentLoaded', () => loadHistory(currentPage));
+
+        async function loadHistory(page) {
+            currentPage = page;
+            tableBody.innerHTML = `<tr><td colspan="6"><p class="loading-placeholder">Đang tải lịch sử...</p></td></tr>`;
+
+            try {
+                const size = 10; // Số bản ghi mỗi trang
+                const pageData = await getImageList(page, size); // Gọi mock API
+
+                if (!pageData.content || pageData.content.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6"><p class="loading-placeholder">Không có lịch sử upload.</p></td></tr>`;
+                    updatePagination(pageData);
+                    return;
+                }
+
+                tableBody.innerHTML = ''; // Xóa loading
+
+                pageData.content.forEach(image => {
+                    const captured = new Date(image.capturedAt).toLocaleString('vi-VN');
+                    const uploaded = new Date(image.uploadedAt).toLocaleString('vi-VN');
+                    const row = `
+                        <tr>
+                            <td><img src="${image.filePath}" alt="Preview" class="thumbnail-preview"></td>
+                            <td>${image.imageName || 'N/A'}</td>
+                            <td>${image.cameraId}</td>
+                            <td>${captured}</td>
+                            <td>${uploaded}</td>
+                            <td>${image.fileSizeKb ? image.fileSizeKb.toFixed(2) + ' KB' : 'N/A'}</td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+
+                updatePagination(pageData);
+
+            } catch (error) {
+                console.error('Lỗi khi tải lịch sử upload:', error);
+                tableBody.innerHTML = `<tr><td colspan="6"><p class="loading-placeholder" style="color: var(--color-status-danger);">Lỗi tải lịch sử: ${error.message}</p></td></tr>`;
+            }
+        }
+
+        function updatePagination(pageData) {
+             if (!pageData) { /* ... xử lý như trang snapshot ... */ return; }
+             pageInfo.textContent = `Trang ${pageData.number + 1} / ${pageData.totalPages}`;
+             prevPageBtn.disabled = pageData.first;
+             nextPageBtn.disabled = pageData.last;
+        }
+
+        prevPageBtn.addEventListener('click', () => { if (currentPage > 0) loadHistory(currentPage - 1); });
+        nextPageBtn.addEventListener('click', () => loadHistory(currentPage + 1));
+    </script>
+</body>
+</html>

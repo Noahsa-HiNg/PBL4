@@ -4,27 +4,37 @@ import com.pbl4.server.entity.CameraEntity;
 import com.pbl4.server.entity.ImageEntity;
 import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ImageRepository;
+import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ thể
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page; // Cho phân trang
+import org.springframework.data.domain.Pageable; // Cho phân trang
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import pbl4.common.model.Camera;
-import pbl4.common.model.Image;
+import pbl4.common.model.Image; // DTO
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
-import java.util.List;
+import java.time.LocalDateTime; // Dùng LocalDateTime để lấy Năm/Tháng/Ngày
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
-import java.util.stream.Collectors;
+// Xóa import List và Collectors vì Page<> tự xử lý
+// import java.util.List;
+// import java.util.stream.Collectors;
 
 @Service
 public class ImageService {
 
-    private final Path fileStorageLocation;
+    private final Path fileStorageLocation; // Thư mục gốc: E:/surveillance_images
     private final ImageRepository imageRepository;
     private final CameraRepository cameraRepository;
+
+    // Định dạng Năm/Tháng/Ngày
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     public ImageService(ImageRepository imageRepository,
                         CameraRepository cameraRepository,
@@ -33,29 +43,66 @@ public class ImageService {
         this.cameraRepository = cameraRepository;
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
+            // Chỉ tạo thư mục gốc ở đây
             Files.createDirectories(this.fileStorageLocation);
         } catch (IOException e) {
-            throw new RuntimeException("Could not create the directory for uploads.", e);
+            throw new RuntimeException("Could not create the root directory for uploads.", e);
         }
     }
 
     /**
-     * SỬA ĐỔI 1: Phương thức store bây giờ trả về DTO 'Image'.
+     * Lưu file ảnh vào cấu trúc thư mục và lưu metadata vào DB.
+     * Trả về DTO 'Image'.
      */
     public Image store(MultipartFile file, int cameraId, Timestamp capturedAt) {
+        // 1. Tìm Camera và Client ID
         CameraEntity camera = cameraRepository.findById(cameraId)
-                .orElseThrow(() -> new RuntimeException("Error: Camera not found with id " + cameraId));
+                .orElseThrow(() -> new EntityNotFoundException("Error: Camera not found with id " + cameraId));
+        
+        // Cần clientId để tạo thư mục
+        Integer clientId = (camera.getClient() != null) ? camera.getClient().getId() : 0; // Hoặc xử lý lỗi nếu client null
 
+        // 2. Tạo tên file duy nhất
         String originalFileName = file.getOriginalFilename();
-        String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
+        // Lấy phần mở rộng file (vd: .jpg)
+        String fileExtension = "";
+        if (originalFileName != null && originalFileName.contains(".")) {
+            fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+        // Tên file mới không cần tên gốc để tránh ký tự đặc biệt
+        String uniqueFileName = UUID.randomUUID().toString() + fileExtension; 
+
+        // 3. Tạo đường dẫn tương đối và thư mục con
+        LocalDateTime capturedDateTime = capturedAt.toLocalDateTime();
+        String datePath = capturedDateTime.format(DATE_FORMATTER); // "YYYY/MM/DD"
+        String relativePathString = Paths.get(
+                String.valueOf(clientId), // Thư mục client
+                String.valueOf(cameraId),  // Thư mục camera
+                datePath,                  // Thư mục YYYY/MM/DD
+                uniqueFileName             // Tên file
+        ).toString().replace("\\", "/"); // Đảm bảo dùng '/' cho web
+
+        Path targetDirectory = this.fileStorageLocation.resolve(Paths.get(
+                String.valueOf(clientId),
+                String.valueOf(cameraId),
+                datePath
+        )).normalize();
+
+        Path targetLocation = targetDirectory.resolve(uniqueFileName).normalize();
 
         try {
-            Path targetLocation = this.fileStorageLocation.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), targetLocation);
+            // Tạo thư mục con nếu chưa có
+            Files.createDirectories(targetDirectory);
 
+            // 4. Lưu file ảnh
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // 5. Tạo và lưu ImageEntity vào CSDL
             ImageEntity imageEntity = new ImageEntity();
-            imageEntity.setImageName(originalFileName);
-            imageEntity.setFilePath(uniqueFileName);
+            imageEntity.setImageName(originalFileName); // Lưu tên gốc để hiển thị
+            imageEntity.setFilePath(relativePathString); // ** LƯU ĐƯỜNG DẪN TƯƠNG ĐỐI **
             imageEntity.setFileSizeKb(file.getSize() / 1024.0);
             imageEntity.setCapturedAt(capturedAt);
             imageEntity.setUploadedAt(new Timestamp(System.currentTimeMillis()));
@@ -63,38 +110,72 @@ public class ImageService {
             
             ImageEntity savedEntity = imageRepository.save(imageEntity);
 
-            // Chuyển đổi Entity đã lưu thành DTO trước khi trả về
+            // 6. Chuyển đổi thành DTO để trả về
             return toDto(savedEntity);
 
         } catch (IOException e) {
+            // Cân nhắc xóa file nếu lưu vào DB thất bại (rollback)
             throw new RuntimeException("Failed to store file " + originalFileName, e);
         }
     }
 
     /**
-     * Phương thức này là phương thức chính để lấy danh sách ảnh.
-     * Nó trả về một danh sách các DTO.
+     * Lấy danh sách ảnh CÓ PHÂN TRANG.
+     * Trả về Page<Image> DTO.
      */
-    public List<Image> getAllImages() {
-        List<ImageEntity> entities = imageRepository.findAll();
-        return entities.stream()
-                       .map(this::toDto)
-                       .collect(Collectors.toList());
+    public Page<Image> getAllImages(Pageable pageable) {
+        Page<ImageEntity> entityPage = imageRepository.findAll(pageable);
+        // Page<> có sẵn hàm map để chuyển đổi
+        return entityPage.map(this::toDto); 
     }
-    
-    // SỬA ĐỔI 2: Xóa phương thức 'getAllImageEntities' vì không cần thiết nữa.
+
+    /**
+     * Lấy danh sách ảnh CÓ PHÂN TRANG theo Camera ID.
+     * Trả về Page<Image> DTO.
+     */
+    public Page<Image> getImagesByCameraId(int cameraId, Pageable pageable) {
+        // Cần thêm findByCameraId(int cameraId, Pageable pageable) vào ImageRepository
+        Page<ImageEntity> entityPage = imageRepository.findByCameraId(cameraId, pageable);
+        return entityPage.map(this::toDto);
+    }
+
+    /**
+     * Xóa ảnh theo ID (bao gồm xóa file vật lý).
+     */
+    public void deleteImage(Long id) {
+        ImageEntity imageEntity = imageRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Image not found with id " + id));
+
+        // 1. Xóa file vật lý trước
+        try {
+            Path filePath = this.fileStorageLocation.resolve(imageEntity.getFilePath()).normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            // Log lỗi nhưng vẫn tiếp tục xóa trong DB
+            System.err.println("Could not delete file: " + imageEntity.getFilePath() + " - " + e.getMessage());
+        }
+
+        // 2. Xóa bản ghi trong CSDL
+        imageRepository.delete(imageEntity);
+    }
     
     /**
      * Hàm tiện ích private để chuyển đổi từ ImageEntity sang Image DTO.
      */
     private Image toDto(ImageEntity entity) {
+        if (entity == null) return null;
+
         Image dto = new Image();
         dto.setId(entity.getId());
         if (entity.getCamera() != null) {
             dto.setCameraId(entity.getCamera().getId());
         }
         dto.setImageName(entity.getImageName());
-        dto.setFilePath(entity.getFilePath()); // Tên file sẽ được Controller xử lý thành URL
+        
+        // FilePath trong DTO là đường dẫn TƯƠNG ĐỐI
+        // Controller sẽ dùng nó để xây dựng URL đầy đủ
+        dto.setFilePath(entity.getFilePath()); 
+        
         dto.setFileSizeKb(entity.getFileSizeKb());
         dto.setCapturedAt(entity.getCapturedAt());
         dto.setUploadedAt(entity.getUploadedAt());

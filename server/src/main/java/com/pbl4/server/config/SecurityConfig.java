@@ -76,7 +76,6 @@ public class SecurityConfig {
             
             // 6. Phân quyền Request
             .authorizeHttpRequests(auth -> auth
-                // Cho phép endpoint đăng nhập mới và các trang lỗi
                 .requestMatchers("/api/auth/**", "/error").permitAll() 
                 // Tất cả các API khác bắt đầu bằng /api/ đều yêu cầu xác thực
                 .requestMatchers("/api/**").authenticated() 

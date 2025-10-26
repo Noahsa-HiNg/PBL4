@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Camera Mới</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script src="/assets/js/auth.js"></script>
+    <style>
+        .form-container { max-width: 600px; margin: auto; }
+        #status-message { margin-top: 1rem; display: none; }
+    </style>
+</head>
+<body>
+    <header class="app-header"> ... </header> <main>
+        <div class="form-container">
+            <h1 class="page-title">Thêm Camera Mới</h1>
+            <form id="add-camera-form">
+                <div class="form-group">
+                    <label for="clientId">Chọn Client</label>
+                    <select id="clientId" class="form-control" required>
+                        <option value="">-- Đang tải Clients --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cameraName">Tên Camera</label>
+                    <input type="text" id="cameraName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="ipAddress">Địa chỉ IP Camera</label>
+                    <input type="text" id="ipAddress" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="onvifUrl">URL ONVIF (Tùy chọn)</label>
+                    <input type="text" id="onvifUrl" class="form-control">
+                </div>
+                 <div class="form-group">
+                    <label for="username">Username Camera (Tùy chọn)</label>
+                    <input type="text" id="username" class="form-control">
+                </div>
+                 <div class="form-group">
+                    <label for="password">Password Camera (Tùy chọn)</label>
+                    <input type="password" id="password" class="form-control">
+                </div>
+                 <div class="form-group">
+                    <label for="active">Trạng thái</label>
+                    <select id="active" class="form-control">
+                        <option value="true" selected>Hoạt động</option>
+                        <option value="false">Không hoạt động</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Thêm Camera</button>
+                <p id="status-message"></p>
+            </form>
+        </div>
+    </main>
+    <footer class="app-footer"> ... </footer>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script> <script>
+        const cameraForm = document.getElementById('add-camera-form');
+        const clientSelect = document.getElementById('clientId');
+        const statusMessage = document.getElementById('status-message');
+
+        // Tải danh sách client khi trang load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const clients = await getClientList();
+                clientSelect.innerHTML = '<option value="">-- Chọn Client --</option>'; // Xóa loading
+                clients.forEach(client => {
+                    const option = `<option value="${client.id}">${client.clientName} (ID: ${client.id})</option>`;
+                    clientSelect.insertAdjacentHTML('beforeend', option);
+                });
+            } catch (error) {
+                clientSelect.innerHTML = '<option value="">Lỗi tải Clients</option>';
+                showStatus("Lỗi tải danh sách client: " + error.message, true);
+            }
+        });
+
+        cameraForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusMessage.style.display = 'none';
+
+            const cameraData = {
+                clientId: parseInt(clientSelect.value),
+                cameraName: document.getElementById('cameraName').value.trim(),
+                ipAddress: document.getElementById('ipAddress').value.trim(),
+                onvifUrl: document.getElementById('onvifUrl').value.trim() || null,
+                username: document.getElementById('username').value.trim() || null,
+                password: document.getElementById('password').value || null,
+                active: document.getElementById('active').value === 'true'
+            };
+
+            try {
+                // Kiểm tra xem hàm createCamera đã có trong mock chưa
+                 if (typeof createCamera !== 'function') {
+                     throw new Error("Chức năng thêm camera (mock) chưa được triển khai.");
+                 }
+                await createCamera(cameraData); // Gọi mock API
+                showStatus("Thêm camera thành công!", false);
+                cameraForm.reset(); // Xóa form
+                clientSelect.selectedIndex = 0; // Reset select
+            } catch (error) {
+                showStatus(error.message || 'Thêm camera thất bại.', true);
+            }
+        });
+
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = isError ? 'var(--color-status-danger)' : 'var(--color-status-success)';
+            statusMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

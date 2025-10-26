@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <style>
+        body { justify-content: center; align-items: center; background-color: var(--color-background-muted); }
+        .register-container { width: 100%; max-width: 450px; padding: 2.5rem; background-color: var(--color-background-surface); border-radius: var(--border-radius-main); box-shadow: 0 8px 20px rgba(0,0,0,0.07); }
+        .register-container h1 { text-align: center; margin-bottom: 2rem; }
+        .register-container .btn { width: 100%; }
+        #error-message, #success-message { text-align: center; margin-top: 1rem; display: none; }
+        #error-message { color: var(--color-status-danger); }
+        #success-message { color: var(--color-status-success); }
+        .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1>Tạo tài khoản mới</h1>
+        <form id="register-form">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" class="form-control" required>
+            </div>
+             <div class="form-group">
+                <label for="role">Vai trò (Mặc định: Viewer)</label>
+                <select id="role" class="form-control">
+                    <option value="VIEWER" selected>Viewer</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" id="register-button">Đăng Ký</button>
+            <p id="error-message"></p>
+            <p id="success-message"></p>
+        </form>
+        <p class="login-link">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+    </div>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script> <script>
+        const registerForm = document.getElementById('register-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const registerButton = document.getElementById('register-button');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            registerButton.disabled = true;
+            registerButton.textContent = 'Đang xử lý...';
+
+            const userData = {
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value, // Server sẽ hash
+                role: document.getElementById('role').value
+            };
+
+            try {
+                // Kiểm tra xem hàm createUser đã có trong api-mock.js chưa
+                if (typeof createUser !== 'function') {
+                     throw new Error("Chức năng đăng ký (mock) chưa được triển khai.");
+                }
+
+                await createUser(userData); // Gọi mock API
+
+                successMessage.textContent = 'Đăng ký thành công! Bạn có thể đăng nhập.';
+                successMessage.style.display = 'block';
+                registerForm.reset(); // Xóa form
+
+            } catch (error) {
+                errorMessage.textContent = error.message || 'Đăng ký thất bại.';
+                errorMessage.style.display = 'block';
+            } finally {
+                registerButton.disabled = false;
+                registerButton.textContent = 'Đăng Ký';
+            }
+        });
+    </script>
+</body>
+</html>
