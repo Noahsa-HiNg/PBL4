@@ -7,18 +7,36 @@ import pbl4.common.model.Client; // DTO
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-@Service
+import com.pbl4.server.entity.UserEntity;
+import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
-
+	private final UserRepository userRepository;
     private final ClientRepository clientRepository;
 
-    public ClientService(ClientRepository clientRepository) {
+    public ClientService(ClientRepository clientRepository, UserRepository userRepository) {
         this.clientRepository = clientRepository;
+        this.userRepository = userRepository;
     }
 
-    public Client createClient(Client clientDto) {
+    /**
+     * TẠO MỚI CLIENT - Đã sửa để nhận ID người dùng đang đăng nhập.
+     * @param clientDto Dữ liệu Client từ Client.
+     * @param userId ID của người dùng đang đăng nhập (lấy từ JWT Token).
+     * @return Client DTO đã được tạo.
+     */
+    public Client createClient(Client clientDto, Long userId) {
+        
+        // 1. Tìm UserEntity (BẮT BUỘC)
+        UserEntity userEntity = userRepository.findById(userId.intValue()) // Dùng findById
+            .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
+
+        // 2. Chuyển đổi DTO sang Entity
         ClientEntity clientEntity = toEntity(clientDto);
+        
+        // 3. GÁN KHÓA NGOẠI BẮT BUỘC (clientEntity.user)
+        clientEntity.setUser(userEntity); 
+        
+        // 4. Lưu và trả về
         ClientEntity savedEntity = clientRepository.save(clientEntity);
         return toDto(savedEntity);
     }

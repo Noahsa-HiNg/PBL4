@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng Ký</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css"> 
     <style>
-        body { justify-content: center; align-items: center; background-color: var(--color-background-muted); }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--color-background-muted); } /* Thêm display:flex và min-height */
         .register-container { width: 100%; max-width: 450px; padding: 2.5rem; background-color: var(--color-background-surface); border-radius: var(--border-radius-main); box-shadow: 0 8px 20px rgba(0,0,0,0.07); }
         .register-container h1 { text-align: center; margin-bottom: 2rem; }
-        .register-container .btn { width: 100%; }
+        .register-container .btn { width: 100%; margin-top: 1rem; } /* Thêm margin-top */
         #error-message, #success-message { text-align: center; margin-top: 1rem; display: none; }
         #error-message { color: var(--color-status-danger); }
         #success-message { color: var(--color-status-success); }
@@ -32,13 +32,6 @@
                 <label for="password">Mật khẩu</label>
                 <input type="password" id="password" class="form-control" required>
             </div>
-             <div class="form-group">
-                <label for="role">Vai trò (Mặc định: Viewer)</label>
-                <select id="role" class="form-control">
-                    <option value="VIEWER" selected>Viewer</option>
-                    <option value="ADMIN">Admin</option>
-                </select>
-            </div>
             <button type="submit" class="btn btn-primary" id="register-button">Đăng Ký</button>
             <p id="error-message"></p>
             <p id="success-message"></p>
@@ -46,7 +39,7 @@
         <p class="login-link">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
     </div>
 
-    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/config.js"></script> 
     <script src="/assets/js/api.js"></script> <script>
         const registerForm = document.getElementById('register-form');
         const errorMessage = document.getElementById('error-message');
@@ -60,29 +53,34 @@
             registerButton.disabled = true;
             registerButton.textContent = 'Đang xử lý...';
 
+            // Dữ liệu gửi đi
             const userData = {
                 username: document.getElementById('username').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 password: document.getElementById('password').value, // Server sẽ hash
-                role: document.getElementById('role').value
+                role: "VIEWER" // Luôn gửi role là "VIEWER" cho trang đăng ký công khai
             };
 
             try {
-                // Kiểm tra xem hàm createUser đã có trong api-mock.js chưa
+                // Kiểm tra xem hàm createUser có tồn tại không (an toàn hơn)
                 if (typeof createUser !== 'function') {
-                     throw new Error("Chức năng đăng ký (mock) chưa được triển khai.");
+                    throw new Error("Chức năng đăng ký chưa sẵn sàng.");
                 }
 
-                await createUser(userData); // Gọi mock API
+                // Gọi API (thật hoặc giả)
+                const newUser = await createUser(userData); 
 
-                successMessage.textContent = 'Đăng ký thành công! Bạn có thể đăng nhập.';
+                // Xử lý thành công
+                successMessage.textContent = `Đăng ký thành công cho '${newUser.username}'! Bạn có thể đăng nhập.`;
                 successMessage.style.display = 'block';
                 registerForm.reset(); // Xóa form
 
             } catch (error) {
-                errorMessage.textContent = error.message || 'Đăng ký thất bại.';
+                // Xử lý lỗi (vd: username tồn tại, lỗi server)
+                errorMessage.textContent = error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
                 errorMessage.style.display = 'block';
             } finally {
+                // Luôn bật lại nút
                 registerButton.disabled = false;
                 registerButton.textContent = 'Đăng Ký';
             }

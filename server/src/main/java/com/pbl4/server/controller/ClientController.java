@@ -1,13 +1,14 @@
 package com.pbl4.server.controller;
 
 import com.pbl4.server.service.ClientService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pbl4.common.model.Client;
 
 import java.util.List;
-
+import org.springframework.security.core.Authentication;
 @RestController
 @RequestMapping("/api/clients")
 public class ClientController {
@@ -20,7 +21,16 @@ public class ClientController {
 
     @PostMapping
     public ResponseEntity<Client> createClient(@RequestBody Client client) {
-        return new ResponseEntity<>(clientService.createClient(client), HttpStatus.CREATED);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() instanceof Long) {
+             Long userId = (Long) authentication.getPrincipal(); 
+             
+             // 2. Gọi Service với userId
+             return new ResponseEntity<>(clientService.createClient(client, userId), HttpStatus.CREATED);
+        }
+        
+        // Xử lý lỗi nếu user không được xác thực hoặc principal không phải ID
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
     }
 
     @GetMapping

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chỉnh sửa Người Dùng</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/css/style.css"> <script src="auth.js"></script> <style>
+        .form-container { max-width: 500px; margin: auto; }
+        #status-message { margin-top: 1rem; display: none; }
+        .back-link { display: block; margin-bottom: 1.5rem; font-size: 0.9em; }
+        /* Thêm style để vô hiệu hóa input */
+        input:disabled {
+            background-color: var(--color-background-muted);
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="live_feed.html">Live Feed</a>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="user_management.html" class="active">User Management</a>
+            <a href="user_settings.html">Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-container">
+             <a href="user_management.html" class="back-link">&larr; Quay lại Danh sách User</a>
+            <h1 class="page-title">Chỉnh sửa Người Dùng</h1>
+            <form id="edit-user-form">
+                <input type="hidden" id="userId">
+
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" class="form-control" disabled required> </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                
+                 <div class="form-group" id="role-group" style="display: none;">
+                    <label for="role">Vai trò</label>
+                    <select id="role" class="form-control" required>
+                        <option value="VIEWER">Viewer</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="update-user-button">Lưu thay đổi</button>
+                <p id="status-message"></p>
+            </form>
+        </div>
+    </main>
+
+    <footer class="app-footer"> ... </footer>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script> <script>
+        const editUserForm = document.getElementById('edit-user-form');
+        const statusMessage = document.getElementById('status-message');
+        const updateUserButton = document.getElementById('update-user-button');
+        const roleGroup = document.getElementById('role-group'); // Div chứa select role
+        const roleSelect = document.getElementById('role');
+        const userIdInput = document.getElementById('userId');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+
+        let currentUserIdToEdit = null; // Biến lưu ID user đang sửa
+
+        // Lấy ID user từ URL và tải dữ liệu
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+
+            if (!userId) {
+                showStatus("Thiếu ID người dùng trong URL.", true);
+                updateUserButton.disabled = true;
+                return;
+            }
+            currentUserIdToEdit = userId; // Lưu ID lại
+
+            // Kiểm tra xem user hiện tại có phải Admin không để hiện ô Role
+            const currentUserRole = localStorage.getItem('role'); // Lấy role đã lưu khi đăng nhập
+            if (currentUserRole === 'ADMIN') {
+                roleGroup.style.display = 'block';
+            }
+
+            // Tải dữ liệu user cần sửa
+            try {
+                if (typeof getUserById !== 'function') { throw new Error("API 'getUserById' không tồn tại."); }
+                const user = await getUserById(userId); // Gọi API lấy thông tin
+
+                // Điền vào form
+                userIdInput.value = user.id;
+                usernameInput.value = user.username;
+                emailInput.value = user.email || '';
+                if (user.role) {
+                    roleSelect.value = user.role; // Chọn đúng role hiện tại
+                }
+
+            } catch (error) {
+                showStatus(`Lỗi tải thông tin user: ${error.message}`, true);
+                updateUserButton.disabled = true;
+            }
+        });
+
+        // Xử lý khi submit form
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUserIdToEdit) return; // Không có ID để cập nhật
+
+            statusMessage.style.display = 'none';
+            updateUserButton.disabled = true;
+            updateUserButton.textContent = 'Đang lưu...';
+
+            // Chỉ lấy các trường được phép cập nhật
+            const userDataToUpdate = {
+                email: emailInput.value.trim()
+                // Không gửi username
+            };
+            
+            // Chỉ Admin mới được gửi role
+            if (localStorage.getItem('role') === 'ADMIN') {
+                 userDataToUpdate.role = roleSelect.value;
+            }
+
+            // (Nếu có phần đổi mật khẩu, lấy giá trị từ input #newPassword)
+            // const newPassword = document.getElementById('newPassword').value;
+            // if (newPassword) {
+            //     userDataToUpdate.password = newPassword; // Server phải xử lý việc hash lại
+            // }
+
+            try {
+                if (typeof updateUser !== 'function') { throw new Error("API 'updateUser' không tồn tại."); }
+                await updateUser(currentUserIdToEdit, userDataToUpdate); // Gọi API cập nhật
+                showStatus("Cập nhật thông tin thành công!", false);
+                // (Tùy chọn) Có thể chuyển hướng về trang user_management sau khi cập nhật
+                // setTimeout(() => { window.location.href = 'user_management.html'; }, 1500);
+
+            } catch (error) {
+                showStatus(error.message || 'Cập nhật thất bại.', true);
+            } finally {
+                updateUserButton.disabled = false;
+                updateUserButton.textContent = 'Lưu thay đổi';
+            }
+        });
+
+        // Hàm hiển thị thông báo
+        function showStatus(message, isError = false) {
+             statusMessage.textContent = message;
+             statusMessage.style.color = isError ? 'var(--color-status-danger)' : 'var(--color-status-success)';
+             statusMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
