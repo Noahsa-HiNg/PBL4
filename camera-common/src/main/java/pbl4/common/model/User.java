@@ -17,7 +17,7 @@ public class User implements Serializable {
     private String role;
     private Timestamp createdAt;
     private Integer activeClientId;
-    
+    private String password;
 
     public User() {
     }
@@ -30,7 +30,12 @@ public class User implements Serializable {
         this.role = role;
         this.createdAt = createdAt;
     }
-
+    public String getPassword() { // <-- Sửa tên getter
+        return password;
+    }
+    public void setPassword(String password) { // <-- Sửa tên setter
+        this.password = password;
+    }
     // Getters and Setters
     public int getId() {
         return id;

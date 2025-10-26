@@ -31,8 +31,7 @@ public class UserService {
         }
         UserEntity userEntity = new UserEntity();
         userEntity.setUsername(userDto.getUsername());
-        // Mã hóa mật khẩu trước khi lưu
-        userEntity.setPasswordHash(passwordEncoder.encode(userDto.getPasswordHash()));
+        userEntity.setPasswordHash(passwordEncoder.encode(userDto.getPassword()));
         userEntity.setEmail(userDto.getEmail());
         userEntity.setRole(userDto.getRole() != null ? userDto.getRole() : "viewer");
         userEntity.setCreatedAt(new Timestamp(System.currentTimeMillis()));
