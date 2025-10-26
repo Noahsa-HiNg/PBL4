@@ -16,6 +16,8 @@ public class User implements Serializable {
     private String email;
     private String role;
     private Timestamp createdAt;
+    private Integer activeClientId;
+    
 
     public User() {
     }
@@ -69,6 +71,13 @@ public class User implements Serializable {
     public void setRole(String role) {
         this.role = role;
     }
+    public Integer getActiveClientId() {
+        return activeClientId;
+    }
+
+    public void setActiveClientId(Integer activeClientId) {
+        this.activeClientId = activeClientId;
+    }
 
     public Timestamp getCreatedAt() {
         return createdAt;
@@ -83,7 +92,10 @@ public class User implements Serializable {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
                 ", role='" + role + '\'' +
+                ", activeClientId=" + activeClientId +
+                ", createdAt=" + createdAt +
                 '}';
     }
 }

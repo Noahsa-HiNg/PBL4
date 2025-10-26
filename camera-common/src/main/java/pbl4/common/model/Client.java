@@ -11,8 +11,10 @@ public class Client implements Serializable {
     private static final long serialVersionUID = 1L; // Cần thiết cho Serializable
 
     private int id;
+    private int userId;
     private String clientName;
     private String ipAddress;
+    private String MachineId;
     private String status;
     private Timestamp lastHeartbeat;
     private int imageWidth;
@@ -27,10 +29,12 @@ public class Client implements Serializable {
     }
 
     // Constructor đầy đủ tham số
-    public Client(int id, String clientName, String ipAddress, String status, Timestamp lastHeartbeat, int imageWidth, int imageHeight, int captureIntervalSeconds, int compressionQuality, Timestamp createdAt, Timestamp updatedAt) {
+    public Client(int id,int userId, String clientName, String ipAddress,String MachineId, String status, Timestamp lastHeartbeat, int imageWidth, int imageHeight, int captureIntervalSeconds, int compressionQuality, Timestamp createdAt, Timestamp updatedAt) {
         this.id = id;
+        this.userId = userId;
         this.clientName = clientName;
         this.ipAddress = ipAddress;
+        this.MachineId =MachineId;
         this.status = status;
         this.lastHeartbeat = lastHeartbeat;
         this.imageWidth = imageWidth;
@@ -49,6 +53,13 @@ public class Client implements Serializable {
     public void setId(int id) {
         this.id = id;
     }
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
 
     public String getClientName() {
         return clientName;
@@ -63,6 +74,13 @@ public class Client implements Serializable {
     }
 
     public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+    public String getMachineId() {
+        return ipAddress;
+    }
+
+    public void setMachineId(String ipAddress) {
         this.ipAddress = ipAddress;
     }
 
@@ -134,9 +152,10 @@ public class Client implements Serializable {
     public String toString() {
         return "Client{" +
                 "id=" + id +
+                ", userId=" + userId +
                 ", clientName='" + clientName + '\'' +
                 ", status='" + status + '\'' +
-                ", captureIntervalSeconds=" + captureIntervalSeconds +
+                ", lastHeartbeat=" + lastHeartbeat +
                 '}';
     }
 }

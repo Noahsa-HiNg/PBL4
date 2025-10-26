@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime; // Dùng LocalDateTime để lấy Năm/Tháng/Ngày
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.math.BigDecimal;
 // Xóa import List và Collectors vì Page<> tự xử lý
 // import java.util.List;
 // import java.util.stream.Collectors;
@@ -101,10 +102,9 @@ public class ImageService {
 
             // 5. Tạo và lưu ImageEntity vào CSDL
             ImageEntity imageEntity = new ImageEntity();
-            imageEntity.setImageName(originalFileName); // Lưu tên gốc để hiển thị
-            imageEntity.setFilePath(relativePathString); // ** LƯU ĐƯỜNG DẪN TƯƠNG ĐỐI **
-            imageEntity.setFileSizeKb(file.getSize() / 1024.0);
-            imageEntity.setCapturedAt(capturedAt);
+            imageEntity.setRelativePath(relativePathString);
+            imageEntity.setFileSizeKb(BigDecimal.valueOf(file.getSize() / 1024.0));
+            imageEntity.setCapturedAt(capturedAt.toLocalDateTime());
             imageEntity.setUploadedAt(new Timestamp(System.currentTimeMillis()));
             imageEntity.setCamera(camera);
             
@@ -148,11 +148,11 @@ public class ImageService {
 
         // 1. Xóa file vật lý trước
         try {
-            Path filePath = this.fileStorageLocation.resolve(imageEntity.getFilePath()).normalize();
+            Path filePath = this.fileStorageLocation.resolve(imageEntity.getRelativePath()).normalize();
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             // Log lỗi nhưng vẫn tiếp tục xóa trong DB
-            System.err.println("Could not delete file: " + imageEntity.getFilePath() + " - " + e.getMessage());
+            System.err.println("Could not delete file: " + imageEntity.getRelativePath() + " - " + e.getMessage());
         }
 
         // 2. Xóa bản ghi trong CSDL
@@ -170,15 +170,14 @@ public class ImageService {
         if (entity.getCamera() != null) {
             dto.setCameraId(entity.getCamera().getId());
         }
-        dto.setImageName(entity.getImageName());
         
         // FilePath trong DTO là đường dẫn TƯƠNG ĐỐI
         // Controller sẽ dùng nó để xây dựng URL đầy đủ
-        dto.setFilePath(entity.getFilePath()); 
+        dto.setFilePath(entity.getRelativePath()); 
         
-        dto.setFileSizeKb(entity.getFileSizeKb());
-        dto.setCapturedAt(entity.getCapturedAt());
-        dto.setUploadedAt(entity.getUploadedAt());
+        dto.setFileSizeKb(entity.getFileSizeKb().doubleValue());
+//        dto.setCapturedAt(entity.getCapturedAt());
+//        dto.setUploadedAt(entity.getUploadedAt());
         dto.setMetadata(entity.getMetadata());
         return dto;
     }

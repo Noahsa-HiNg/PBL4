@@ -2,7 +2,7 @@ package pbl4.common.model;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-
+import java.time.LocalDateTime;
 /**
  * Lớp này ánh xạ tới bảng 'Images' trong cơ sở dữ liệu.
  * Lưu trữ metadata của các hình ảnh được chụp.
@@ -13,20 +13,20 @@ public class Image implements Serializable {
     private long id; // Dùng long cho BIGINT
     private int cameraId;
     private String imageName;
-    private String filePath;
+    private String relativePath;
     private double fileSizeKb; // Dùng double cho DECIMAL
-    private Timestamp capturedAt;
-    private Timestamp uploadedAt;
+    private LocalDateTime capturedAt;
+    private LocalDateTime uploadedAt;
     private String metadata; // Kiểu JSON trong DB sẽ được xử lý như một chuỗi String
 
     public Image() {
     }
 
-    public Image(long id, int cameraId, String imageName, String filePath, double fileSizeKb, Timestamp capturedAt, Timestamp uploadedAt, String metadata) {
+    public Image(long id, int cameraId, String imageName, String relativePath, double fileSizeKb, LocalDateTime  capturedAt, LocalDateTime  uploadedAt, String metadata) {
         this.id = id;
         this.cameraId = cameraId;
         this.imageName = imageName;
-        this.filePath = filePath;
+        this.relativePath = relativePath;
         this.fileSizeKb = fileSizeKb;
         this.capturedAt = capturedAt;
         this.uploadedAt = uploadedAt;
@@ -59,11 +59,11 @@ public class Image implements Serializable {
     }
 
     public String getFilePath() {
-        return filePath;
+        return relativePath;
     }
 
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
+    public void setFilePath(String relativePath) {
+        this.relativePath = relativePath;
     }
 
     public double getFileSizeKb() {
@@ -74,19 +74,19 @@ public class Image implements Serializable {
         this.fileSizeKb = fileSizeKb;
     }
 
-    public Timestamp getCapturedAt() {
+    public LocalDateTime getCapturedAt() {
         return capturedAt;
     }
 
-    public void setCapturedAt(Timestamp capturedAt) {
+    public void setCapturedAt(LocalDateTime capturedAt) {
         this.capturedAt = capturedAt;
     }
 
-    public Timestamp getUploadedAt() {
+    public LocalDateTime getUploadedAt() {
         return uploadedAt;
     }
 
-    public void setUploadedAt(Timestamp uploadedAt) {
+    public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
 
@@ -103,7 +103,7 @@ public class Image implements Serializable {
         return "Image{" +
                 "id=" + id +
                 ", cameraId=" + cameraId +
-                ", imageName='" + imageName + '\'' +
+                ", relativePath='" + relativePath + '\'' +
                 ", capturedAt=" + capturedAt +
                 '}';
     }
