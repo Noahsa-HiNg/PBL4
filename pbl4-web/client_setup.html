@@ -26,13 +26,12 @@
     </style>
 </head>
 <body>
-    <header class="app-header">
+   <header class="app-header">
         <a href="live_feed.html" class="logo">■ Surveillance System</a>
         <nav>
             <a href="live_feed.html">Live Feed</a>
             <a href="client_setup.html">Client Setup</a>
             <a href="snapshot_management.html">Snapshot Management</a>
-            <a href="user_management.html" class="active">User Management</a>
             <a href="user_settings.html">Settings</a>
         </nav>
     </header> <main>
@@ -44,7 +43,7 @@
                     <th>Trạng thái</th>
                     <th>Cấu hình (WxH @ Q)</th>
                     <th>Khoảng nghỉ</th>
-                    <th>Hành động</th>
+                    <th>Quản lý Camera</th> <th>Cấu hình</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,7 +100,7 @@
 
         async function loadClients() {
             try {
-                const clients = await getClientList(); // Từ api-mock.js
+                const clients = await getClientList(); 
                 tableBody.innerHTML = ''; // Xóa bảng cũ
                 
                 clients.forEach(client => {
@@ -115,6 +114,13 @@
                             <td><span class="${statusClass}">${client.status}</span></td>
                             <td>${configStr}</td>
                             <td>${intervalStr}</td>
+                            
+                            <td>
+                                <a href="camera_list.html?clientId=${client.id}" class="btn btn-secondary btn-sm">
+                                    Xem Cameras
+                                </a>
+                            </td>
+                            
                             <td>
                                 <button class="btn btn-primary btn-sm" onclick="openEditModal(${client.id})">
                                     Cấu hình

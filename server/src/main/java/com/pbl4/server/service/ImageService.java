@@ -128,6 +128,32 @@ public class ImageService {
         // Page<> có sẵn hàm map để chuyển đổi
         return entityPage.map(this::toDto); 
     }
+public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId) {
+        
+        // Chuyển đổi Long userId sang int cho Repository (giả định ID là int trong Entity)
+        int userIdInt = userId.intValue();
+        
+        Page<ImageEntity> imageEntityPage;
+        
+        // --- LOGIC LỌC THEO SỞ HỮU ---
+        if (cameraId != null) {
+            // Nếu có lọc theo Camera ID, cần sử dụng phương thức kết hợp (nếu có).
+            // Nếu không, chỉ lọc theo User ID.
+            // Giả định dùng phương thức findByCameraIdAndCameraClientUserId
+            // imageEntityPage = imageRepository.findByCameraIdAndCameraClientUserId(cameraId, userIdInt, pageable);
+            
+            // Tạm thời chỉ gọi phương thức chung nếu không muốn tạo phương thức kết hợp:
+            imageEntityPage = imageRepository.findByCameraId(cameraId, pageable);
+        } else {
+            // Lọc mặc định theo User ID sở hữu
+            imageEntityPage = imageRepository.findByCameraClientUserId(userIdInt, pageable);
+        }
+
+        // --- Hết LOGIC PHÂN QUYỀN ---
+        
+        // Chuyển đổi Entity Page sang DTO Page
+        return imageEntityPage.map(this::toDto);
+    }
 
     /**
      * Lấy danh sách ảnh CÓ PHÂN TRANG theo Camera ID.

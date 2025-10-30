@@ -1,6 +1,8 @@
 package com.pbl4.server.controller;
 
 import com.pbl4.server.service.ImageService;
+import com.pbl4.server.service.UserService;
+
 import jakarta.persistence.EntityNotFoundException; // Import for error handling
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -12,6 +14,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -22,6 +26,8 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import org.slf4j.Logger; // Thêm import
+import org.slf4j.LoggerFactory;
 // Remove unused List import
 // import java.util.List;
 
@@ -31,18 +37,33 @@ import java.sql.Timestamp;
 public class ImageController {
 
     private final ImageService imageService;
+    private final UserService userService;
     private final Path fileStorageLocation; // Root storage directory (e.g., E:/surveillance_images)
 
-    public ImageController(ImageService imageService, @Value("${file.upload-dir}") String uploadDir) {
+    public ImageController(ImageService imageService,UserService userService, @Value("${file.upload-dir}") String uploadDir) {
         this.imageService = imageService;
+        this.userService = userService;
         // Normalize the base storage path
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+        System.out.println("DEBUG: fileStorageLocation được khởi tạo là: " + this.fileStorageLocation.toString());
     }
 
     /**
      * Handles image upload. Service saves file to structured dir and returns DTO with relative path.
      * Controller builds the full URL for the response.
      */
+    private String buildFileUrl1(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+        // Đảm bảo dùng dấu gạch chéo chuẩn (mặc dù param không quá quan trọng)
+        String formattedPath = relativePath.replace("\\", "/"); 
+        
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/images/view") // Đường dẫn gốc (KHÔNG có dấu / ở cuối)
+                .queryParam("path", formattedPath) // Thêm "?path=..."
+                .toUriString();
+    }
     @PostMapping("/upload")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file,
                                        @RequestParam("cameraId") int cameraId,
@@ -55,7 +76,7 @@ public class ImageController {
             Image savedDto = imageService.store(file, cameraId, capturedAt);
             
             // Build the full, accessible URL using the relative path
-            savedDto.setFilePath(buildFileUrl(savedDto.getFilePath())); 
+            savedDto.setFilePath(buildFileUrl1(savedDto.getFilePath())); 
             
             return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
         } catch (EntityNotFoundException e) { // Catch specific error from service
@@ -78,22 +99,36 @@ public class ImageController {
             // Default: page 0, 20 items/page, sort by capturedAt descending
             @PageableDefault(size = 20, sort = "capturedAt") Pageable pageable) { 
         
+        // 1. XÁC THỰC VÀ LẤY USERNAME
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // Nếu chưa đăng nhập (hoặc bị coi là anonymousUser)
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
+        }
+
         Page<Image> imagePage;
         try {
-            if (cameraId != null) {
-                // Call the paginated service method for a specific camera
-                imagePage = imageService.getImagesByCameraId(cameraId, pageable);
-            } else {
-                // Call the paginated service method for all images
-                imagePage = imageService.getAllImages(pageable);
+            // 2. LẤY USER ID TỪ SERVICE (Khắc phục lỗi Principal)
+            Long userId = userService.getUserIdByUsername(username); 
+            
+            // Nếu không tìm thấy ID của người dùng đã xác thực (lỗi logic)
+            if (userId == null) {
+                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
             }
 
-            // Build full URLs for the file paths in the current page's content
-            imagePage.getContent().forEach(dto -> dto.setFilePath(buildFileUrl(dto.getFilePath())));
+            // 3. GỌI SERVICE LỌC DUY NHẤT (Áp dụng bộ lọc sở hữu)
+            // Phương thức này trong Service phải sử dụng ImageRepository.findByCameraClientUserId(userId, ...)
+            imagePage = imageService.getImageList(userId, pageable, cameraId);
+
+            // 4. Xây dựng URL cho file path (Giữ nguyên logic này)
+            // Lưu ý: Đổi tên hàm buildFileUrl1 thành tên chính xác bạn đang dùng (ví dụ: buildFileUrl)
+            imagePage.getContent().forEach(dto -> dto.setFilePath(buildFileUrl1(dto.getFilePath())));
             
             return ResponseEntity.ok(imagePage);
         
-        } catch (EntityNotFoundException e) { // Handle case where client/camera doesn't exist
+        } catch (EntityNotFoundException e) { 
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); 
         } catch (Exception e) {
              System.err.println("Error fetching images: " + e.getMessage());
@@ -106,16 +141,29 @@ public class ImageController {
      * Serves an image file based on its relative path.
      * This acts as a secure gateway to the private storage location.
      */
-    @GetMapping("/view/{relativePath:.+}") // Accepts multi-level paths like "1/1/2025/10/26/image.jpg"
-    public ResponseEntity<Resource> getImage(@PathVariable String relativePath) {
+    private static final Logger logger = LoggerFactory.getLogger(ImageController.class);
+
+    // THAY ĐỔI 1: Xóa phần động khỏi @GetMapping
+    @GetMapping("/view") 
+    public ResponseEntity<Resource> getImage(
+        // THAY ĐỔI 2: Đổi từ @PathVariable thành @RequestParam
+        @RequestParam("path") String relativePath 
+    ) {
+        logger.info("ImageController: Nhận yêu cầu xem ảnh: '{}'", relativePath);
+        // In thêm thông tin xác thực (nếu cần debug quyền)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        logger.debug("ImageController: Thông tin xác thực hiện tại: {}", authentication);
         try {
             // Combine the root storage location with the relative path
             Path filePath = fileStorageLocation.resolve(relativePath).normalize();
+            System.out.println("DEBUG: Đang cố gắng truy cập file: " + filePath.toString());
+            
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
                 // Determine content type dynamically if possible, default to JPEG
-                String contentType = determineContentType(filePath);
+                logger.debug("ImageController: Tìm thấy và trả về file: {}", filePath.toString());
+                String contentType = determineContentType(filePath); // Giữ nguyên hàm này của bạn
 
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))

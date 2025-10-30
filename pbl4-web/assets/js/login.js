@@ -37,8 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('userInfo', JSON.stringify(loginData.username));
                 }
 
-                // Chuyển hướng đến trang chính
-                window.location.href = 'live_feed.html'; 
+                
             } else {
                  // Trường hợp server không trả về token như mong đợi
                  showError('Phản hồi từ server không hợp lệ.');

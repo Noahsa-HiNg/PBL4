@@ -82,29 +82,61 @@ async function loginUser(username, password) {
         const data = await response.json(); // Đọc JSON (cả thành công và lỗi)
 
         if (!response.ok) {
-           await handleResponseError(response); // Ném lỗi nếu status không phải 2xx
+            await handleResponseError(response); // Ném lỗi nếu status không phải 2xx
         }
 
         if (data.token) {
             localStorage.setItem('authToken', data.token);
             console.log("Đăng nhập thành công, đã lưu token.");
-            // Lấy thông tin user ngay sau khi đăng nhập để lưu role (tùy chọn)
+
+            let userRole = null; // Khởi tạo biến role để sử dụng cho chuyển hướng
+
+            // 1. CỐ GẮNG LẤY THÔNG TIN USER VÀ ROLE
             try {
                 const userInfo = await getCurrentUser(); // Gọi API /me
+                
+                if (userInfo.id) localStorage.setItem('id', userInfo.id);
                 if (userInfo.username) localStorage.setItem('username', userInfo.username);
-                if (userInfo.role) localStorage.setItem('role', userInfo.role);
+                
+                // Lưu role và cập nhật biến cục bộ
+                if (userInfo.role) {
+                    localStorage.setItem('role', userInfo.role);
+                    userRole = userInfo.role; 
+                }
+                
             } catch (userError) {
-                console.warn("Không thể lấy thông tin user sau khi đăng nhập:", userError);
-                // Vẫn coi như đăng nhập thành công vì đã có token
+                // Nếu /me bị lỗi (ví dụ: token hợp lệ nhưng database lỗi), 
+                // ta cảnh báo nhưng vẫn cho phép chuyển hướng dựa trên giả định User thường
+                console.warn("Không thể lấy thông tin user sau khi đăng nhập. Chuyển hướng về trang mặc định.", userError);
             }
+            
+            // 2. LOGIC CHUYỂN HƯỚNG TỔNG QUÁT (ĐƯỢC GỌI TRONG MỌI TRƯỜNG HỢP TOKEN HỢP LỆ)
+            // Kiểm tra role đã lấy được, hoặc role đã có trong localStorage
+            const finalRole = userRole || localStorage.getItem('role');
+           
+            if (finalRole === 'ADMIN') {
+                console.log("Vai trò Admin được xác nhận. Chuyển hướng đến Admin Dashboard.");
+                // Chuyển hướng Admin đến thư mục Admin
+              
+                 
+                window.location.href = '/admin/admin_dashboard.html'; 
+            } else {
+                console.log("Vai trò User được xác nhận. Chuyển hướng đến Live Feed.");
+                // Chuyển hướng Viewer/User đến trang mặc định
+                 
+                window.location.href = 'live_feed.html'; 
+            }
+            
+            // Dòng này không bao giờ được gọi nếu chuyển hướng thành công
+            return data; 
+
         } else {
             throw new Error("Server không trả về token.");
         }
-
-        return data; // Trả về { token: "..." }
+        
 
     } catch (error) {
-        // Không redirect ở đây, để trang login tự xử lý hiển thị lỗi
+        // Xử lý lỗi đăng nhập (401, 400)
         console.error('Lỗi API đăng nhập:', error);
         throw error;
     }
@@ -127,8 +159,6 @@ async function logoutUser() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
-    localStorage.removeItem('mockUserId'); // Xóa cả mock data cũ
-    localStorage.removeItem('mockUserRole');
     console.log("Đã xóa token và user info.");
     // Chuyển hướng ngay lập tức
     if (typeof window !== 'undefined') {
@@ -179,6 +209,24 @@ async function getClientById(id) {
     }
 }
 
+async function getClientList() {
+    // URL: API_BASE_URL/clients
+    const url = `${API_BASE_URL}/clients`; 
+    console.log("Gọi API lấy danh sách client:", url);
+    
+    try {
+        
+        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+        
+        if (!response.ok) {
+            await handleResponseError(response);
+        }
+        return await response.json();
+    } catch (error) {
+        handleApiError(error, "getClientList");
+    }
+}
+
 async function updateClient(id, clientDetails) {
     const url = `${API_BASE_URL}/clients/${id}`;
     console.log(`Gọi API cập nhật client ${id}:`, url);
@@ -212,7 +260,22 @@ async function deleteClient(id) {
 
 
 // === API: /api/cameras ===
-
+// Trong tệp API JavaScript của bạn
+async function getCameraListByClient(clientId) {
+    // Gọi API đã được cấu hình trên Server: GET /api/cameras?clientId={id}
+    const url = `${API_BASE_URL}/cameras?clientId=${clientId}`; 
+    console.log(`Gọi API lấy camera theo Client ID (QUERY PARAM): ${url}`);
+    
+    try {
+        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+        if (!response.ok) await handleResponseError(response);
+        
+        // Trả về danh sách Camera
+        return await response.json();
+    } catch (error) {
+        handleApiError(error, `getCameraListByClient(${clientId})`);
+    }
+}
 async function createCamera(cameraData) {
     const url = `${API_BASE_URL}/cameras`;
      console.log("Gọi API tạo camera:", url);
@@ -241,17 +304,17 @@ async function getCameraList() {
     }
 }
 
-async function getCameraListByClient(clientId) {
-    const url = `${API_BASE_URL}/cameras/by-client/${clientId}`;
-    console.log(`Gọi API lấy camera theo client ${clientId}:`, url);
-    try {
-        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
-        if (!response.ok) await handleResponseError(response);
-        return await response.json();
-    } catch (error) {
-        handleApiError(error, `getCameraListByClient(${clientId})`);
-    }
-}
+// async function getCameraListByClient(clientId) {
+//     const url = `${API_BASE_URL}/cameras/by-client/${clientId}`;
+//     console.log(`Gọi API lấy camera theo client ${clientId}:`, url);
+//     try {
+//         const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+//         if (!response.ok) await handleResponseError(response);
+//         return await response.json();
+//     } catch (error) {
+//         handleApiError(error, `getCameraListByClient(${clientId})`);
+//     }
+// }
 
 async function getCameraById(id) {
     const url = `${API_BASE_URL}/cameras/${id}`;
@@ -447,3 +510,34 @@ async function deleteUser(id) {
 
 // (Nếu dùng ES Modules, export các hàm ở cuối)
 // export { loginUser, getAuthHeaders, handleApiError, getCameraList, ... };
+async function registerUser(userData) {
+    // SỬ DỤNG ENDPOINT CÔNG KHAI /auth/register
+    const url = `${API_BASE_URL}/auth/register`; 
+    console.log(`Gọi API đăng ký: ${url}`);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            // API công khai KHÔNG cần Authorization header
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+
+        const data = await response.json(); // Đọc JSON (cả thành công và lỗi)
+
+        if (!response.ok) {
+            // Xử lý lỗi từ server (vd: 400 Bad Request, username đã tồn tại)
+            // Lỗi này sẽ được ném ra và catch ở UI (register.html)
+            throw new Error(data.message || `Đăng ký thất bại với mã lỗi: ${response.status}`);
+        }
+
+        console.log("Đăng ký thành công:", data.username);
+        return data; // Trả về { message: "...", username: "...", id: ... }
+
+    } catch (error) {
+        // Xử lý lỗi mạng hoặc lỗi không rõ khác
+        console.error('Lỗi API đăng ký:', error);
+        // Ném lỗi ra ngoài để UI hiển thị thông báo
+        throw error; 
+    }
+}

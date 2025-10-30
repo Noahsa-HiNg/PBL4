@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cài đặt Tài khoản</title>
-    <link rel="stylesheet" href="/assets/css/style.css"> <script src="auth.js"></script> <style>
+    <link rel="stylesheet" href="/assets/css/style.css"> <script src="/assets/js/auth.js"></script> <style>
         .settings-container { max-width: 600px; }
         #status-message { margin-top: 1rem; display: none; }
         /* Style để vô hiệu hóa input */
@@ -20,11 +20,9 @@
         <a href="live_feed.html" class="logo">■ Surveillance System</a>
         <nav>
             <a href="client_setup.html">Client Setup</a>
-            <a href="live_feed.html">Live Camera Feed</a>
-            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="live_feed.html" class="active">Live Camera Feed</a>
             <a href="upload_history.html">Upload History</a>
-            <a href="user_settings.html" class="active">User Settings</a>
-            <a href="user_management.html" id="admin-link-users" style="display: none;">User Management</a>
+            <a href="user_settings.html">User Settings</a>
         </nav>
     </header>
 
@@ -59,7 +57,7 @@
         </nav>
     </footer>
 
-    <script src="/assets/js/config.js"></script> <script src="/assets/js/api.js"></script> <script>
+    <script src="../assets/js/config.js"></script> <script src="../assets/js/api.js"></script> <script>
         const settingsForm = document.getElementById('settings-form');
         const logoutBtn = document.getElementById('logout-btn');
         const statusMessage = document.getElementById('status-message');

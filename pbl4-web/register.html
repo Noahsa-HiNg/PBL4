@@ -67,8 +67,7 @@
                     throw new Error("Chức năng đăng ký chưa sẵn sàng.");
                 }
 
-                // Gọi API (thật hoặc giả)
-                const newUser = await createUser(userData); 
+                const newUser = await registerUser(userData);
 
                 // Xử lý thành công
                 successMessage.textContent = `Đăng ký thành công cho '${newUser.username}'! Bạn có thể đăng nhập.`;

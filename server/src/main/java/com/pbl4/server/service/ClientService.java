@@ -47,10 +47,30 @@ public class ClientService {
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
+    /**
+     * Phương thức mới: Lấy danh sách Client theo User ID sở hữu.
+     * Phương thức này thay thế cho logic cũ getAllClients().
+     * @param userId ID của người dùng đang đăng nhập (Long).
+     * @return Danh sách Client DTO.
+     */
+    public List<Client> getClientsByUserId(Long userId) {
+        // Chuyển đổi Long userId sang int
+        int userIdInt = userId.intValue();
+        
+        // Gọi phương thức Repository đã lọc theo User ID
+        List<ClientEntity> entities = clientRepository.findByUserId(userIdInt);
+        
+        // Chuyển đổi Entity sang DTO và trả về
+        return entities.stream().map(this::toDto).collect(Collectors.toList());
+    }
 
-    public Client getClientById(int id) {
-        ClientEntity entity = clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
+    // [Tùy chọn] Sửa đổi phương thức GET ONE để đảm bảo phân quyền
+    public Client getClientById(int id, Long currentUserId) {
+        ClientEntity entity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
+        if (entity == null) {
+            // Ném lỗi nếu Client không tồn tại HOẶC không thuộc sở hữu của người dùng
+            throw new RuntimeException("Client not found or access denied.");
+        }
         return toDto(entity);
     }
 

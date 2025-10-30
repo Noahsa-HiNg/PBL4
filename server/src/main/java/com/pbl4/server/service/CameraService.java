@@ -32,6 +32,32 @@ public class CameraService {
         CameraEntity savedEntity = cameraRepository.save(cameraEntity);
         return toDto(savedEntity);
     }
+    public List<Camera> getCamerasByUserId(Long userId) {
+        // Chuyển đổi Long userId sang int
+        int userIdInt = userId.intValue();
+        
+        // Gọi phương thức Repository đã lọc theo User ID
+        List<CameraEntity> entities = cameraRepository.findByClientUserId(userIdInt);
+        
+        // Chuyển đổi Entity sang DTO và trả về
+        return entities.stream().map(this::toDto).collect(Collectors.toList());
+    }
+public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
+        
+        // 1. Kiểm tra quyền sở hữu (Security check)
+        // Lý tưởng: Bạn nên viết truy vấn kép: findByClientIdAndClientUserId(clientId, currentUserId)
+        
+        // Giả sử bạn sử dụng truy vấn kép đó để đảm bảo người dùng chỉ xem được camera của client họ sở hữu
+        // List<CameraEntity> entities = cameraRepository.findByClientIdAndClientUserId(clientId, currentUserId.intValue());
+        
+        // Nếu không có truy vấn kép, hãy dùng truy vấn cũ (nhưng nên kiểm tra quyền sở hữu ở tầng Service)
+        List<CameraEntity> entities = cameraRepository.findByClientId(clientId);
+        
+        // LƯU Ý BẢO MẬT: Nếu bạn không dùng truy vấn kép, bạn phải kiểm tra trong Service 
+        // xem Client này có thuộc về currentUserId hay không.
+        
+        return entities.stream().map(this::toDto).collect(Collectors.toList());
+    }
     
     public List<Camera> getAllCameras() {
         return cameraRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());

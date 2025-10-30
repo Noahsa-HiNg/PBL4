@@ -1,23 +1,28 @@
 package com.pbl4.server.controller;
 
+import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import pbl4.common.model.User;
-
+import com.pbl4.server.service.DashboardService;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
+    private final DashboardService dashboardService;
+    public UserController(UserService userService, DashboardService dashboardService) {
         this.userService = userService;
+        this.dashboardService = dashboardService; // Tiêm dependency
     }
-
     // API để tạo user mới
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
@@ -37,10 +42,35 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    // API để cập nhật user
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable int id, @RequestBody User userDetails) {
-        return ResponseEntity.ok(userService.updateUser(id, userDetails));
+        
+        // LẤY USER ID TỪ TOKEN
+        // Logic tương tự như các Controller khác
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // ... (Kiểm tra xác thực)
+        
+        Long currentUserId = userService.getUserIdByUsername(username);
+
+        if (currentUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        try {
+            // GỌI SERVICE VỚI CHỮ KÝ MỚI
+            // 1. Kiểm tra DTO.role có được gửi không
+            // 2. Gọi Service
+            User updatedUser = userService.updateUser(id, userDetails, currentUserId);
+            return ResponseEntity.ok(updatedUser);
+        } catch (SecurityException e) {
+            // Bắt lỗi khi user cố gắng cập nhật tài khoản người khác
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 403 FORBIDDEN
+        } catch (RuntimeException e) {
+            // Bắt các lỗi khác (User not found, v.v.)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     // API để xóa user
@@ -48,5 +78,68 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable int id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+    /**
+     * [BỔ SUNG MỚI] Lấy danh sách Users khớp với từ khóa tìm kiếm.
+     * @param keyword Từ khóa tìm kiếm (có thể là tên, email, hoặc ID).
+     * @return Danh sách User DTO.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(@RequestParam("keyword") String keyword) {
+        
+        // 1. LẤY AUTHENTICATION
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Kiểm tra nếu chưa xác thực (dù SecurityConfig đã làm, đây là lớp bảo vệ cuối)
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+        }
+        
+        // 2. TRÍCH XUẤT ROLE
+        String currentUserRole = authentication.getAuthorities().stream()
+            .findFirst()
+            .map(auth -> auth.getAuthority().replace("ROLE_", "")) // Loại bỏ tiền tố "ROLE_"
+            .orElse("VIEWER"); // Mặc định là VIEWER nếu không tìm thấy
+
+        // 3. ÁP DỤNG KIỂM TRA PHÂN QUYỀN (ADMIN ONLY)
+        if (!currentUserRole.equals("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 FORBIDDEN
+        }
+        
+        // 4. Thực thi logic nếu là ADMIN
+        try {
+            List<User> users = userService.searchUsers(keyword);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            System.err.println("Error searching users: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<?> getUserStats(@PathVariable("id") int targetUserId) {
+        
+        // --- LOGIC KIỂM TRA QUYỀN ADMIN ---
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserRole = authentication.getAuthorities().stream()
+            .findFirst()
+            .map(auth -> auth.getAuthority().replace("ROLE_", ""))
+            .orElse("VIEWER");
+
+        // YÊU CẦU QUYỀN ADMIN ĐỂ XEM THỐNG KÊ CỦA BẤT KỲ USER NÀO
+        if (!currentUserRole.equals("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access Denied: Requires ADMIN role.")); // 403 FORBIDDEN
+        }
+        
+        // --- THỰC HIỆN LOGIC ---
+        try {
+            // Gọi Service để lấy số liệu thống kê
+            Map<String, Long> stats = dashboardService.getUserStats((long) targetUserId);
+            
+            // 200 OK với JSON: {"totalClients": 5, "totalCameras": 12}
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            System.err.println("Error fetching user stats for ID " + targetUserId + ": " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error fetching stats."));
+        }
     }
 }

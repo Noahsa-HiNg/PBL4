@@ -7,9 +7,8 @@
     
     <link rel="stylesheet" href="/assets/css/style.css"> 
     
-    <script src="/assets/js/auth.js"></script> 
-    
     <style>
+        /* CSS cho Grid/Modal */
         .loading-placeholder {
             text-align: center;
             padding: 2rem;
@@ -24,6 +23,7 @@
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s ease;
+            cursor: pointer; 
         }
         .image-card:hover {
             transform: translateY(-5px);
@@ -38,10 +38,6 @@
         .image-card-info {
             padding: 1rem;
             font-size: 0.9rem;
-        }
-        .image-card-info p {
-            margin: 0;
-            color: var(--color-text-secondary);
         }
         .image-card-info strong {
             color: var(--color-text-primary);
@@ -64,23 +60,129 @@
         #page-info {
             font-weight: 600;
         }
+
+        /* CSS CHO MODAL CHI TIẾT ẢNH */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; 
+            background-color: rgba(0, 0, 0, 0.85); 
+            padding-top: 50px;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: var(--color-background-main);
+            margin: auto;
+            color: var(--color-text-secondary);
+            padding: 0;
+            border-radius: var(--border-radius-main);
+            width: 90%;
+            max-width: 800px; 
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            animation-name: animatetop;
+            animation-duration: 0.4s;
+        }
+
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            background-color: var(--color-background-muted);
+            color: var(--color-text-primary);
+            border-bottom: 1px solid var(--color-border);
+            border-top-left-radius: var(--border-radius-main);
+            border-top-right-radius: var(--border-radius-main);
+        }
+        
+        .close-btn {
+            color: var(--color-text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+            transition: 0.2s;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: var(--color-text-primary);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .modal-image-container img {
+            width: 100%;
+            height: auto;
+            max-height: 60vh; 
+            object-fit: contain; 
+            border-radius: var(--border-radius-main);
+            background-color: var(--color-background-muted);
+        }
+        
+        .modal-details p {
+            margin: 0.5rem 0;
+            font-size: 1rem;
+        }
+        .modal-details strong {
+            color: var(--color-text-secondary);
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--color-border);
+            background-color: var(--color-background-muted);
+            border-bottom-left-radius: var(--border-radius-main);
+            border-bottom-right-radius: var(--border-radius-main);
+        }
+        #modal-delete-btn {
+            background-color: var(--color-status-danger);
+            color: white;
+        }
+        #modal-delete-btn:hover {
+            background-color: #c82333; 
+        }
+        .filter-controls {
+            display: flex; gap: 15px; margin-bottom: 20px; align-items: center;
+        }
     </style>
 </head>
 <body>
     <header class="app-header">
         <a href="live_feed.html" class="logo">■ Surveillance System</a>
         <nav>
+            <a href="live_feed.html">Live Feed</a>
             <a href="client_setup.html">Client Setup</a>
-            <a href="live_feed.html">Live Camera Feed</a>
             <a href="snapshot_management.html" class="active">Snapshot Management</a>
-            <a href="upload_history.html">Upload History</a>
-            <a href="user_settings.html">User Settings</a>
-        </nav>
+            <a href="user_settings.html">Settings</a>
+            </nav>
     </header>
 
     <main>
         <h1 class="page-title">Kho ảnh đã chụp</h1>
         
+        <div class="filter-controls">
+            <label for="client-filter">Lọc theo Client/Camera:</label>
+            <select id="client-filter" class="form-control" style="min-width: 250px;">
+                <option value="all">-- Tất cả ảnh của tôi --</option>
+                </select>
+            <button class="btn btn-primary" id="apply-filter-btn">Áp dụng</button>
+        </div>
         <div class="gallery-grid" id="gallery-grid">
             <p class="loading-placeholder">Đang tải thư viện ảnh...</p>
         </div>
@@ -92,17 +194,32 @@
         </div>
     </main>
 
-    <footer class="app-footer">
-        <span>© 2025 Surveillance System. All rights reserved.</span>
-        <nav>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Contact Us</a>
-        </nav>
-    </footer>
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-btn">&times;</span>
+                <h2 id="modal-image-name">Chi tiết ảnh</h2>
+            </div>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modal-image-src" src="" alt="Chi tiết ảnh">
+                </div>
+                <div class="modal-details">
+                    <p><strong>Camera ID:</strong> <span id="modal-image-camera"></span></p>
+                    <p><strong>Thời gian:</strong> <span id="modal-image-time"></span></p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <a href="#" download id="modal-download-btn" class="btn btn-primary" style="margin-right: 10px;">
+                    Tải về
+                </a>
+                <button class="btn btn-danger" id="modal-delete-btn">Xóa ảnh</button>
+            </div>
+        </div>
+    </div>
+
 
     <script src="/assets/js/config.js"></script>
-    
     <script src="/assets/js/api.js"></script> 
 
     <script>
@@ -110,46 +227,95 @@
         const prevPageBtn = document.getElementById('prev-page-btn');
         const nextPageBtn = document.getElementById('next-page-btn');
         const pageInfo = document.getElementById('page-info');
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-image-src');
+        const modalName = document.getElementById('modal-image-name');
+        const modalCamera = document.getElementById('modal-image-camera');
+        const modalTime = document.getElementById('modal-image-time');
+        const modalDeleteBtn = document.getElementById('modal-delete-btn');
+        const closeModalBtn = document.querySelector('.modal .close-btn');
+        const clientFilterSelect = document.getElementById('client-filter');
+        const applyFilterBtn = document.getElementById('apply-filter-btn');
+        const modalDownloadBtn = document.getElementById('modal-download-btn');
 
-        // Biến toàn cục để lưu trang hiện tại
         let currentPage = 0;
+        let currentCameraId = null; // Biến lưu ID camera đang áp dụng bộ lọc
 
-        // Chờ HTML tải xong thì tải ảnh trang đầu tiên
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFilterOptions(); // Tải danh sách Clients/Cameras cho bộ lọc
             loadImages(currentPage);
         });
 
-        /**
-         * Hàm chính: Tải ảnh cho một trang cụ thể
-         * @param {number} page Số trang (bắt đầu từ 0)
-         */
+        // ----------------------------------------------------
+        // LOGIC LỌC VÀ TẢI OPTIONS
+        // ----------------------------------------------------
+        async function loadFilterOptions() {
+            try {
+                const clients = await getClientList(); // Lấy tất cả clients của user
+                
+                // Sử dụng Promise.all để tải Cameras cho tất cả Clients cùng lúc
+                const cameraPromises = clients.map(client => getCameraListByClient(client.id));
+                const allCameras = await Promise.all(cameraPromises);
+                
+                clients.forEach((client, index) => {
+                    const clientGroup = document.createElement('optgroup');
+                    clientGroup.label = `Client: ${client.clientName}`;
+                    clientFilterSelect.appendChild(clientGroup);
+
+                    const cameras = allCameras[index];
+                    cameras.forEach(camera => {
+                        const option = document.createElement('option');
+                        // Giá trị truyền vào API là Camera ID
+                        option.value = camera.id; 
+                        option.textContent = `Camera: ${camera.cameraName}`;
+                        clientGroup.appendChild(option);
+                    });
+                });
+
+            } catch (error) {
+                console.error("Lỗi tải tùy chọn lọc:", error);
+                const errorOption = document.createElement('option');
+                errorOption.textContent = "Không thể tải Clients/Cameras";
+                errorOption.disabled = true;
+                clientFilterSelect.appendChild(errorOption);
+            }
+        }
+
+        // ----------------------------------------------------
+        // TẢI ẢNH VỚI BỘ LỌC
+        // ----------------------------------------------------
         async function loadImages(page) {
-            currentPage = page; // Cập nhật trang hiện tại
-            galleryGrid.innerHTML = '<p class="loading-placeholder">Đang tải thư viện ảnh...</p>'; // Hiển thị loading
+            currentPage = page; 
+            galleryGrid.innerHTML = '<p class="loading-placeholder">Đang tải thư viện ảnh...</p>'; 
             
             try {
-                // 1. Gọi API (giả hoặc thật)
-                // Giả sử mỗi trang 6 ảnh
-                const size = 6; 
-                const pageData = await getImageList(page, size);
+                const size = 8; 
+                // Truyền currentCameraId (có thể là null) vào API
+                const pageData = await getImageList(page, size, currentCameraId); 
 
                 if (!pageData.content || pageData.content.length === 0) {
                     galleryGrid.innerHTML = '<p class="loading-placeholder">Không tìm thấy ảnh nào.</p>';
-                    updatePagination(pageData); // Cập nhật (vô hiệu hóa) nút
+                    updatePagination(pageData); 
                     return;
                 }
 
-                galleryGrid.innerHTML = ''; // Xóa chữ "Đang tải..."
+                galleryGrid.innerHTML = ''; 
 
-                // 2. "Vẽ" các thẻ ảnh
                 pageData.content.forEach(image => {
                     const timestamp = new Date(image.capturedAt).toLocaleString('vi-VN');
 
+                    // [PHẦN MỚI] Thiết lập data-* attributes
                     const imageCardHTML = `
-                        <div class="image-card">
-                            <img src="${image.filePath}" alt="${image.imageName}">
+                        <div class="image-card" 
+                            data-id="${image.id}" 
+                            data-src="${image.filePath}" 
+                            data-name="Snapshot ID ${image.id}" 
+                            data-camera="${image.cameraId}" 
+                            data-time="${timestamp}">
+                            
+                            <img src="${image.filePath}" alt="Snapshot ${image.id}">
                             <div class="image-card-info">
-                                <strong>${image.imageName}</strong>
+                                <strong>Snapshot ID: ${image.id}</strong>
                                 <p>Camera ID: ${image.cameraId}</p>
                                 <p>Thời gian: ${timestamp}</p>
                             </div>
@@ -158,7 +324,6 @@
                     galleryGrid.insertAdjacentHTML('beforeend', imageCardHTML);
                 });
 
-                // 3. Cập nhật các nút phân trang
                 updatePagination(pageData);
 
             } catch (error) {
@@ -167,10 +332,6 @@
             }
         }
 
-        /**
-         * Cập nhật trạng thái các nút phân trang
-         * @param {object} pageData Đối tượng Page<> từ API
-         */
         function updatePagination(pageData) {
             if (!pageData) {
                 prevPageBtn.disabled = true;
@@ -178,28 +339,100 @@
                 pageInfo.textContent = 'Trang 1 / 1';
                 return;
             }
-
-            // `pageData.number` là trang hiện tại (từ 0)
-            // `pageData.totalPages` là tổng số trang
             pageInfo.textContent = `Trang ${pageData.number + 1} / ${pageData.totalPages}`;
-
-            // Nếu là trang đầu tiên, vô hiệu hóa nút "Trước"
             prevPageBtn.disabled = pageData.first; 
-            
-            // Nếu là trang cuối cùng, vô hiệu hóa nút "Sau"
             nextPageBtn.disabled = pageData.last;
         }
 
-        // Thêm sự kiện click cho các nút
-        prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 0) {
-                loadImages(currentPage - 1);
+
+        // ----------------------------------------------------
+        // LOGIC SỰ KIỆN
+        // ----------------------------------------------------
+        
+        // 1. LỌC: Gắn sự kiện cho nút Áp dụng Lọc
+        applyFilterBtn.addEventListener('click', () => {
+            const selectedValue = clientFilterSelect.value;
+            
+            if (selectedValue === 'all') {
+                currentCameraId = null; // Lấy tất cả ảnh (của user)
+            } else {
+                // Gán Camera ID đã chọn (là một số nguyên)
+                currentCameraId = parseInt(selectedValue);
             }
+            
+            loadImages(0); // Tải lại trang đầu tiên với bộ lọc mới
+        });
+
+        // 2. PHÂN TRANG
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 0) loadImages(currentPage - 1);
         });
 
         nextPageBtn.addEventListener('click', () => {
-            // (Chúng ta không cần kiểm tra vì nút đã bị vô hiệu hóa)
             loadImages(currentPage + 1);
+        });
+
+
+        // 3. MODAL: Thêm sự kiện click cho LƯỚI ẢNH (Event Delegation)
+        galleryGrid.addEventListener('click', (event) => {
+            const card = event.target.closest('.image-card');
+            
+            if (card) {
+                const imageData = {
+                    id: card.dataset.id,
+                    src: card.dataset.src,
+                    name: card.dataset.name, 
+                    camera: card.dataset.camera,
+                    time: card.dataset.time
+                };
+                showImageDetails(imageData); // Gửi data vào modal
+            }
+        });
+
+        // 4. MODAL: Logic hiển thị/đóng
+        function showImageDetails(data) {
+            modalName.textContent = `Snapshot ID: ${data.id}`;
+            modalImg.src = data.src;
+            modalImg.alt = `Snapshot ${data.id}`;
+            modalCamera.textContent = data.camera;
+            modalTime.textContent = data.time;
+            
+            // Thiết lập nút Xóa và Tải về
+            modalDeleteBtn.setAttribute('data-delete-id', data.id);
+            modalDownloadBtn.href = data.src;
+            modalDownloadBtn.download = `snapshot_ID${data.id}_${data.camera}.jpg`;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            modalImg.src = ""; 
+            modalDeleteBtn.removeAttribute('data-delete-id'); 
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) closeModal();
+        });
+
+        // 5. MODAL: Xử lý XÓA ẢNH
+        modalDeleteBtn.addEventListener('click', async () => {
+            const id = modalDeleteBtn.getAttribute('data-delete-id');
+            if (!id) return; 
+
+            if (!confirm(`Bạn có chắc muốn xóa ảnh này (ID: ${id}) không?`)) return;
+
+            try {
+                await deleteImage(id); 
+                alert('Đã xóa ảnh thành công!');
+                closeModal(); 
+                loadImages(currentPage); // Tải lại danh sách ảnh ở trang hiện tại
+
+            } catch (error) {
+                console.error('Lỗi khi xóa ảnh:', error);
+                alert(`Không thể xóa ảnh: ${error.message}`);
+            }
         });
     </script>
 </body>
