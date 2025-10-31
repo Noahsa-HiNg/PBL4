@@ -24,7 +24,7 @@ import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
 	private final UserRepository userRepository;
     private final ClientRepository clientRepository;
-    private final UserRepository userRepository;
+
 
     public ClientService(ClientRepository clientRepository, UserRepository userRepository) {
         this.clientRepository = clientRepository;
