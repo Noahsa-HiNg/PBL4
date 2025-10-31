@@ -1,21 +1,102 @@
 package com.pbl4.server.service;
 
+import com.pbl4.server.dto.CameraDTO;
+import com.pbl4.server.dto.ClientDTO;
+import com.pbl4.server.dto.ClientRegisterRequest;
+import com.pbl4.server.dto.ClientRegisterResponse;
 import com.pbl4.server.entity.ClientEntity;
+import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.ClientRepository;
+import com.pbl4.server.repository.UserRepository;
+
+import io.jsonwebtoken.lang.Collections;
+
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Client; // DTO
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
 	private final UserRepository userRepository;
     private final ClientRepository clientRepository;
+    private final UserRepository userRepository;
 
     public ClientService(ClientRepository clientRepository, UserRepository userRepository) {
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
+
+    }
+    public ClientRegisterResponse registerOrGetClient(ClientRegisterRequest request, String username, String remoteIpAddress) {
+
+        // 1. Tìm UserEntity dựa vào username từ token (đảm bảo user tồn tại)
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Lỗi: Không tìm thấy User với username: " + username));
+
+        // 2. Tìm ClientEntity dựa trên machineId VÀ user (unique constraint)
+        Optional<ClientEntity> existingClientOpt = clientRepository.findByMachineIdAndUser(request.getMachineId(), user);
+
+        if (existingClientOpt.isPresent()) {
+            // ----- TRƯỜNG HỢP 1: Client ĐÃ TỒN TẠI -----
+            ClientEntity client = existingClientOpt.get();
+
+            // Cập nhật thông tin mới nhất cho client
+            client.setIpAddress(remoteIpAddress);       // Cập nhật IP hiện tại
+            client.setStatus("online");                 // Đánh dấu là đang online
+            client.setLastHeartbeat(Timestamp.from(Instant.now())); // Cập nhật thời gian kết nối cuối
+            client.setClientName(request.getClientName()); // Cập nhật tên nếu client có đổi
+            clientRepository.save(client);              // Lưu thay đổi vào DB
+
+            // Lấy danh sách camera liên kết với client này
+            // Do dùng FetchType.EAGER nên cameras đã được tải cùng client
+            List<CameraDTO> cameras = client.getCameras().stream()
+                    .map(CameraDTO::new) // Chuyển từ CameraEntity sang CameraDTO
+                    .collect(Collectors.toList());
+
+            System.out.println("Client '" + client.getClientName() + "' (ID: " + client.getId() + ") đã kết nối lại. Tìm thấy " + cameras.size() + " camera.");
+
+            // Trả về thông tin client ID, thông báo và danh sách camera
+            ClientDTO clientDTO = new ClientDTO(client);
+            return new ClientRegisterResponse(clientDTO, "Client đã đăng ký. Tải lại danh sách camera.", cameras);
+
+        } 
+        else {
+            // ----- TRƯỜNG HỢP 2: Client CHƯA TỒN TẠI -----
+            ClientEntity newClient = new ClientEntity();
+            newClient.setUser(user);                      // Liên kết với user
+            newClient.setMachineId(request.getMachineId()); // ID duy nhất của máy
+            newClient.setClientName(request.getClientName()); // Tên client gửi lên
+            newClient.setIpAddress(remoteIpAddress);      // IP hiện tại
+
+            // Thiết lập các giá trị mặc định theo CSDL
+            newClient.setStatus("online");                // Trạng thái ban đầu
+            newClient.setImageWidth(1280);                // Giá trị mặc định
+            newClient.setImageHeight(720);                // Giá trị mặc định
+            newClient.setCaptureIntervalSeconds(5);       // Giá trị mặc định
+            newClient.setCompressionQuality(85);          // Giá trị mặc định
+            newClient.setCreatedAt(Timestamp.from(Instant.now())); // Thời gian tạo
+            newClient.setLastHeartbeat(Timestamp.from(Instant.now())); // Thời gian kết nối đầu tiên
+
+            // Lưu client mới vào DB
+            ClientEntity savedClient = clientRepository.save(newClient);
+
+            System.out.println("Client mới '" + savedClient.getClientName() + "' (ID: " + savedClient.getId() + ") đã được đăng ký cho user '" + username + "'.");
+
+            // (Tùy chọn) Cập nhật active_client_id trong bảng Users nếu user chưa có client nào đang active
+            if (user.getActiveClient() == null) {
+                user.setActiveClient(savedClient);
+                userRepository.save(user);
+                System.out.println("Đã đặt client ID " + savedClient.getId() + " làm active client cho user '" + username + "'.");
+            }
+            ClientDTO clientDTO = new ClientDTO(savedClient);
+
+            // Trả về thông tin client ID mới, thông báo và danh sách camera RỖNG
+            return new ClientRegisterResponse(clientDTO, "Client mới đã được đăng ký thành công.", Collections.emptyList());
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ import com.pbl4.server.entity.ImageEntity;
 import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ImageRepository;
 import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ thể
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page; // Cho phân trang
 import org.springframework.data.domain.Pageable; // Cho phân trang
@@ -55,6 +56,7 @@ public class ImageService {
      * Lưu file ảnh vào cấu trúc thư mục và lưu metadata vào DB.
      * Trả về DTO 'Image'.
      */
+    @Transactional
     public Image store(MultipartFile file, int cameraId, Timestamp capturedAt) {
         // 1. Tìm Camera và Client ID
         CameraEntity camera = cameraRepository.findById(cameraId)
@@ -123,6 +125,7 @@ public class ImageService {
      * Lấy danh sách ảnh CÓ PHÂN TRANG.
      * Trả về Page<Image> DTO.
      */
+    @Transactional(readOnly = true)
     public Page<Image> getAllImages(Pageable pageable) {
         Page<ImageEntity> entityPage = imageRepository.findAll(pageable);
         // Page<> có sẵn hàm map để chuyển đổi
@@ -159,6 +162,7 @@ public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId
      * Lấy danh sách ảnh CÓ PHÂN TRANG theo Camera ID.
      * Trả về Page<Image> DTO.
      */
+    @Transactional(readOnly = true)
     public Page<Image> getImagesByCameraId(int cameraId, Pageable pageable) {
         // Cần thêm findByCameraId(int cameraId, Pageable pageable) vào ImageRepository
         Page<ImageEntity> entityPage = imageRepository.findByCameraId(cameraId, pageable);
@@ -168,6 +172,7 @@ public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId
     /**
      * Xóa ảnh theo ID (bao gồm xóa file vật lý).
      */
+    @Transactional
     public void deleteImage(Long id) {
         ImageEntity imageEntity = imageRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Image not found with id " + id));
@@ -202,8 +207,16 @@ public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId
         dto.setFilePath(entity.getRelativePath()); 
         
         dto.setFileSizeKb(entity.getFileSizeKb().doubleValue());
-//        dto.setCapturedAt(entity.getCapturedAt());
-//        dto.setUploadedAt(entity.getUploadedAt());
+        if (entity.getCapturedAt() != null) {
+            dto.setCapturedAt(entity.getCapturedAt());
+        }
+        
+        // entity.getUploadedAt() là Timestamp (từ CSDL)
+        // dto.setUploadedAt() mong đợi LocalDateTime (theo báo lỗi)
+        if (entity.getUploadedAt() != null) {
+            // Chuyển đổi Timestamp sang LocalDateTime
+            dto.setUploadedAt(entity.getUploadedAt().toLocalDateTime()); 
+        }
         dto.setMetadata(entity.getMetadata());
         return dto;
     }

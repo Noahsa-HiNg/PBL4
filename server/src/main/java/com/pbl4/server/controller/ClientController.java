@@ -4,6 +4,7 @@ import com.pbl4.server.service.ClientService;
 import com.pbl4.server.service.UserService;
 
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,9 @@ public class ClientController {
         this.clientService = clientService;
         this.userService = userService;
     }
+    @PostMapping("/register")
+    public ResponseEntity<ClientRegisterResponse> registerClient(
+            @RequestBody ClientRegisterRequest request,
 
     @PostMapping
     public ResponseEntity<Client> createClient(@RequestBody Client client) {

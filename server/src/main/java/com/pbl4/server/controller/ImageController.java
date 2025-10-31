@@ -68,10 +68,12 @@ public class ImageController {
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file,
                                        @RequestParam("cameraId") int cameraId,
                                        @RequestParam("capturedAt") Timestamp capturedAt) {
+                                       @RequestParam("capturedAt") long capturedAtMillis) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File cannot be empty.");
         }
         try {
+        	Timestamp capturedAt = new Timestamp(capturedAtMillis);
             // Service returns DTO with the relative path stored
             Image savedDto = imageService.store(file, cameraId, capturedAt);
             
