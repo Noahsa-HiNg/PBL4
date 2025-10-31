@@ -1,5 +1,6 @@
 package com.pbl4.server.controller;
 
+import com.pbl4.server.dto.UpdateCameraActiveRequest;
 import com.pbl4.server.service.CameraService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,12 +8,16 @@ import org.springframework.web.bind.annotation.*;
 import pbl4.common.model.Camera;
 import com.pbl4.server.service.CameraService;
 import com.pbl4.server.service.UserService; // BỔ SUNG để lấy User ID
+
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication; // BỔ SUNG
 import org.springframework.security.core.context.SecurityContextHolder; // BỔ SUNG
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cameras")
@@ -61,6 +66,24 @@ public class CameraController {
         }
 
         return ResponseEntity.ok(cameras);
+    }
+    @PutMapping("/{id}/status") // Dùng PUT
+    public ResponseEntity<?> updateCameraStatus(
+            @PathVariable int id,
+            @RequestBody UpdateCameraActiveRequest request,
+            Authentication authentication) {
+        
+        try {
+            String username = authentication.getName();
+            cameraService.updateCameraActiveStatus(id, request.isActive(), username,request.getMachineId());
+            return ResponseEntity.ok(Map.of("message", "Camera " + id + " status updated to " + request.isActive()));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Error updating camera status", "error", e.getMessage()));
+        }
     }
 
     // ... (Thêm các endpoint getById, update, delete tương tự ClientController)

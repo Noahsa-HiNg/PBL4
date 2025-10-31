@@ -25,12 +25,14 @@ import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
 	
     private final ClientRepository clientRepository;
+
     private final UserRepository userRepository;
     private final CameraRepository cameraRepository;
     private static final long SECONDS_IN_DAY = 86400;
     private static final long MAX_PING_INTERVAL_SECONDS = 90000; // 1 ngày + 1 giờ
     private static final long MIN_PING_INTERVAL_SECONDS = 30;
     public ClientService(ClientRepository clientRepository, UserRepository userRepository,CameraRepository cameraRepository) {
+
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.cameraRepository = cameraRepository;
