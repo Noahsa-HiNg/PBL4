@@ -67,7 +67,6 @@ public class ImageController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file,
                                        @RequestParam("cameraId") int cameraId,
-                                       @RequestParam("capturedAt") Timestamp capturedAt) {
                                        @RequestParam("capturedAt") long capturedAtMillis) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File cannot be empty.");

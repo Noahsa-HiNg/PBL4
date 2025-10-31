@@ -1,10 +1,16 @@
 package com.pbl4.server.controller;
 
+import com.pbl4.server.dto.ClientRegisterRequest;
+import com.pbl4.server.dto.ClientRegisterResponse;
 import com.pbl4.server.service.ClientService;
 import com.pbl4.server.service.UserService;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +32,21 @@ public class ClientController {
     @PostMapping("/register")
     public ResponseEntity<ClientRegisterResponse> registerClient(
             @RequestBody ClientRegisterRequest request,
+            Authentication authentication,
+            HttpServletRequest servletRequest) {
+
+        // 1. Lấy username của user đang đăng nhập từ token
+    	String username = authentication.getName();
+
+        // 2. Lấy địa chỉ IP thật của máy client đang gọi API
+        String remoteIpAddress = servletRequest.getRemoteAddr();
+
+        // 3. Gọi Service để xử lý logic nghiệp vụ
+        ClientRegisterResponse response = clientService.registerOrGetClient(request, username, remoteIpAddress);
+
+        // 4. Trả về kết quả cho client
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<Client> createClient(@RequestBody Client client) {
