@@ -1,5 +1,5 @@
 package com.pbl4.server.entity;
-
+import java.sql.Timestamp;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -59,7 +59,11 @@ public class ClientEntity implements Serializable {
     // 1 Client quản lý nhiều Camera
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.EAGER) // EAGER để tải camera ngay
     private Set<CameraEntity> cameras;
-
+    @Column(name = "last_image_received")
+    private Timestamp lastImageReceived; // Mốc thời gian ảnh cuối
+    
+    @Column(name = "last_ping_attempt")
+    private Timestamp lastPingAttempt;
     // --- Getters and Setters ---
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
@@ -89,4 +93,8 @@ public class ClientEntity implements Serializable {
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
     public Set<CameraEntity> getCameras() { return cameras; }
     public void setCameras(Set<CameraEntity> cameras) { this.cameras = cameras; }
+    public Timestamp getLastImageReceived() { return lastImageReceived; }
+    public void setLastImageReceived(Timestamp lastImageReceived) { this.lastImageReceived = lastImageReceived; }
+    public Timestamp getLastPingAttempt() { return lastPingAttempt; }
+    public void setLastPingAttempt(Timestamp lastPingAttempt) { this.lastPingAttempt = lastPingAttempt; }
 }

@@ -1,9 +1,12 @@
 package com.pbl4.server.service;
 
 import com.pbl4.server.entity.CameraEntity;
+import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.ImageEntity;
 import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ImageRepository;
+import com.pbl4.server.repository.UserRepository;
+
 import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ thể
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +15,7 @@ import org.springframework.data.domain.Pageable; // Cho phân trang
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pbl4.common.model.Image; // DTO
-
+import com.pbl4.server.repository.ClientRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -22,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.LocalDateTime; // Dùng LocalDateTime để lấy Năm/Tháng/Ngày
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 import java.math.BigDecimal;
 // Xóa import List và Collectors vì Page<> tự xử lý
@@ -34,15 +38,20 @@ public class ImageService {
     private final Path fileStorageLocation; // Thư mục gốc: E:/surveillance_images
     private final ImageRepository imageRepository;
     private final CameraRepository cameraRepository;
-
+    private final ClientRepository clientRepository;
+    private final UserRepository  userRepository;
     // Định dạng Năm/Tháng/Ngày
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     public ImageService(ImageRepository imageRepository,
                         CameraRepository cameraRepository,
-                        @Value("${file.upload-dir}") String uploadDir) {
+                        @Value("${file.upload-dir}") String uploadDir,
+                        ClientRepository clientRepository,UserRepository userRepository) {
         this.imageRepository = imageRepository;
         this.cameraRepository = cameraRepository;
+        this.clientRepository = clientRepository;
+        this.userRepository = userRepository;
+        
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
             // Chỉ tạo thư mục gốc ở đây
@@ -64,7 +73,10 @@ public class ImageService {
         
         // Cần clientId để tạo thư mục
         Integer clientId = (camera.getClient() != null) ? camera.getClient().getId() : 0; // Hoặc xử lý lỗi nếu client null
-
+        if (clientId != null) {
+            // GỌI HÀM CẬP NHẬT TRẠNG THÁI CLIENT LÊN ACTIVE
+            updateClientStatusToActive(clientId); 
+        }
         // 2. Tạo tên file duy nhất
         String originalFileName = file.getOriginalFilename();
         // Lấy phần mở rộng file (vd: .jpg)
@@ -220,4 +232,24 @@ public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId
         dto.setMetadata(entity.getMetadata());
         return dto;
     }
+    private void updateClientStatusToActive(int clientId) {
+        clientRepository.findById(clientId).ifPresent(client -> {
+            // Đặt trạng thái: "ACTIVE"
+            client.setStatus("ACTIVE"); 
+            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
+            client.setLastPingAttempt(null); 
+            clientRepository.save(client);
+        });
+    }
+    public void setAllClientsOfUserOffline(String username) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            List<ClientEntity> clients = clientRepository.findByUserId(user.getId());
+            
+            for (ClientEntity client : clients) {
+                client.setStatus("OFFLINE"); // Đặt trạng thái về OFFLINE
+            }
+            clientRepository.saveAll(clients);
+        });
+    }
+    
 }

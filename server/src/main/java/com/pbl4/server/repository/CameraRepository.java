@@ -6,11 +6,18 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface CameraRepository extends JpaRepository<CameraEntity, Integer> {
 	List<CameraEntity> findByClientUserId(int userId);
 	List<CameraEntity> findByClientId(int clientId);
 	long countByIsActive(boolean isActive);
 	long countByClientUserId(int userId);
+	@Modifying
+    @Transactional
+    @Query("UPDATE CameraEntity c SET c.isActive = :isActive WHERE c.client.id = :clientId")
+    int updateAllByClientId(@Param("clientId") int clientId, @Param("isActive") boolean isActive);
 }

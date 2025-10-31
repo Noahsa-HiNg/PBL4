@@ -122,5 +122,16 @@ public class ClientController {
         
         return ResponseEntity.ok(clients);
     }
-    
+    @PutMapping("/ping-response/{clientId}")
+    public ResponseEntity<?> recordPingResponse(@PathVariable int clientId) {
+        // LƯU Ý: Thêm logic xác thực Token/Client ID
+        clientService.clientPingResponded(clientId);
+        return ResponseEntity.ok().build();
+    }
+    @PutMapping("/logout/{clientId}")
+    public ResponseEntity<?> clientLogout(@PathVariable int clientId) {
+        // LƯU Ý: Thêm logic xác thực Token/Client ID
+        clientService.setClientOfflineAndTurnOffCameras(clientId);
+        return ResponseEntity.ok().build();
+    }
 }

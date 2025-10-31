@@ -41,7 +41,6 @@ public class CameraEntity implements Serializable {
 
     @OneToMany(mappedBy = "camera", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<ImageEntity> images;
-
     // --- Getters and Setters ---
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

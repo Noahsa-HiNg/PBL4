@@ -6,6 +6,7 @@ import com.pbl4.server.dto.ClientRegisterRequest;
 import com.pbl4.server.dto.ClientRegisterResponse;
 import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.UserEntity;
+import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.repository.UserRepository;
 
@@ -22,14 +23,17 @@ import java.util.stream.Collectors;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
-	private final UserRepository userRepository;
+	
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
-
-    public ClientService(ClientRepository clientRepository, UserRepository userRepository) {
+    private final CameraRepository cameraRepository;
+    private static final long SECONDS_IN_DAY = 86400;
+    private static final long MAX_PING_INTERVAL_SECONDS = 90000; // 1 ngày + 1 giờ
+    private static final long MIN_PING_INTERVAL_SECONDS = 30;
+    public ClientService(ClientRepository clientRepository, UserRepository userRepository,CameraRepository cameraRepository) {
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
-
+        this.cameraRepository = cameraRepository;
     }
     public ClientRegisterResponse registerOrGetClient(ClientRegisterRequest request, String username, String remoteIpAddress) {
 
@@ -194,4 +198,43 @@ public class ClientService {
         // ... sao chép các trường khác
         return entity;
     }
+    public void clientPingResponded(int clientId) {
+        clientRepository.findById(clientId).ifPresent(client -> {
+            // Đặt lại mốc thời gian và trạng thái chờ
+            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
+            client.setLastPingAttempt(null); // Reset Ping Attempt
+            client.setStatus("SUSPENDED"); // Giữ trạng thái đang treo
+            clientRepository.save(client);
+        });
+    }
+    public long calculateDynamicPingInterval(int clientId) {
+        ClientEntity client = clientRepository.findById(clientId).orElse(null);
+        if (client == null ||  client.getCaptureIntervalSeconds() <= 0) {
+            return 180; // Mặc định 3 phút
+        }
+
+        long captureInterval = (long) client.getCaptureIntervalSeconds();
+        long calculatedInterval;
+
+        if (captureInterval > SECONDS_IN_DAY) {
+            calculatedInterval = MAX_PING_INTERVAL_SECONDS;
+        } else {
+            calculatedInterval = captureInterval * 2;
+        }
+
+        return Math.max(calculatedInterval, MIN_PING_INTERVAL_SECONDS);
+    }
+    public void setClientOfflineAndTurnOffCameras(int clientId) {
+        clientRepository.findById(clientId).ifPresent(client -> {
+            // 1. Tắt tất cả Cameras
+            cameraRepository.updateAllByClientId(clientId, false); 
+            
+            // 2. Đặt trạng thái Client
+            client.setStatus("OFFLINE"); 
+            client.setLastPingAttempt(null);
+            clientRepository.save(client);
+        });
+    }
+    
+    
 }
