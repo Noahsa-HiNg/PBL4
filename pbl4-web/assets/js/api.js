@@ -470,8 +470,8 @@ async function deleteBatchImages(imageIds = []) {
 
     try {
         const headers = getAuthHeaders();
-        headers.set('Content-Type', 'application/json'); // QUAN TRỌNG
-
+        //headers.set('Content-Type', 'application/json'); // QUAN TRỌNG
+        headers['Content-Type'] = 'application/json';
         const response = await fetch(url, {
             method: 'DELETE',
             headers: headers,

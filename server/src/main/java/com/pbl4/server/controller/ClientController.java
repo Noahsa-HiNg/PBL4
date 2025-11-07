@@ -67,7 +67,7 @@ public class ClientController {
 //        return ResponseEntity.ok(clientService.getAllClients());
 //    }
 
-    @GetMapping("/{id}") // Sửa đổi API GET ONE để đảm bảo phân quyền
+    @GetMapping("/{id}") 
     public ResponseEntity<Client> getClientById(@PathVariable int id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();

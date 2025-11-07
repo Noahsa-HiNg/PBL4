@@ -105,6 +105,7 @@ public class ClientService {
         }
     }
 
+    
     /**
      * TẠO MỚI CLIENT - Đã sửa để nhận ID người dùng đang đăng nhập.
      * @param clientDto Dữ liệu Client từ Client.
@@ -200,6 +201,7 @@ public class ClientService {
         // ... sao chép các trường khác
         return entity;
     }
+    
     public void clientPingResponded(int clientId) {
         clientRepository.findById(clientId).ifPresent(client -> {
             // Đặt lại mốc thời gian và trạng thái chờ
@@ -236,6 +238,10 @@ public class ClientService {
             client.setLastPingAttempt(null);
             clientRepository.save(client);
         });
+        
+    }
+    public int checkStatus(int clientId) {
+    	return clientRepository.findStatusById(clientId);
     }
     
     

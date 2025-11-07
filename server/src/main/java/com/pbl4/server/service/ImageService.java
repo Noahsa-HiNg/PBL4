@@ -1,5 +1,6 @@
 package com.pbl4.server.service;
-
+import com.pbl4.server.websocket.MyWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.entity.CameraEntity;
 import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.ImageEntity;
@@ -9,11 +10,14 @@ import com.pbl4.server.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ thể
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page; // Cho phân trang
 import org.springframework.data.domain.Pageable; // Cho phân trang
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import pbl4.common.model.Image; // DTO
 import com.pbl4.server.repository.ClientRepository;
 import java.io.IOException;
@@ -26,7 +30,9 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.LocalDateTime; // Dùng LocalDateTime để lấy Năm/Tháng/Ngày
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.math.BigDecimal;
 // Xóa import List và Collectors vì Page<> tự xử lý
@@ -41,6 +47,11 @@ public class ImageService {
     private final CameraRepository cameraRepository;
     private final ClientRepository clientRepository;
     private final UserRepository  userRepository;
+    @Autowired
+    private MyWebSocketHandler webSocketHandler; // 1. Inject Handler
+
+    @Autowired
+    private ObjectMapper objectMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     public ImageService(ImageRepository imageRepository,
@@ -110,11 +121,45 @@ public class ImageService {
             imageEntity.setCamera(camera);
             
             ImageEntity savedEntity = imageRepository.save(imageEntity);
+            try {
+                // 3. Lấy username của người cần nhận
+                String ownerUsername = savedEntity.getCamera().getClient().getUser().getUsername();
+                
+                // 4. Tạo DTO (bạn đã có hàm toDto và buildFileUrl)
+                Image imageDto = toDto(savedEntity);
+                imageDto.setFilePath(buildFileUrl(imageDto.getFilePath())); 
+
+                // 5. Tạo tin nhắn JSON chuẩn
+                Map<String, Object> wsMessage = new HashMap<>();
+                wsMessage.put("type", "NEW_IMAGE"); // Loại tin nhắn
+                wsMessage.put("data", imageDto);    // Gói DTO vào
+                
+                String jsonMessage = objectMapper.writeValueAsString(wsMessage);
+
+                // 6. GỌI HÀM SEND
+                webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
+
+            } catch (Exception e) {
+                System.err.println("Không thể gửi thông báo WebSocket (ảnh mới): " + e.getMessage());
+            }
             return toDto(savedEntity);
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file " + originalFileName, e);
         }
+    }
+    private String buildFileUrl(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+        // Đảm bảo dùng dấu / cho URL
+        String formattedPath = relativePath.replace("\\", "/"); 
+        
+        // URL này phải trỏ đến ImageController @GetMapping("/view")
+        return ServletUriComponentsBuilder.fromCurrentContextPath() 
+                .path("/api/images/view") 
+                .queryParam("path", formattedPath)
+                .toUriString();
     }
 
     /**

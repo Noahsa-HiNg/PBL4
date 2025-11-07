@@ -16,7 +16,7 @@ public interface ClientRepository extends JpaRepository<ClientEntity, Integer> {
     List<ClientEntity> findByUserId(int userId);
     ClientEntity findByIdAndUserId(int id, int userId);
     long countByUserId(int userId);
-   
+    int findStatusById(int clientId);
 
  // Tìm Clients KHÔNG phải là status X (dùng cho Scheduler OFFLINE)
     List<ClientEntity> findByStatusNotAndLastImageReceivedBefore(String status, Timestamp timeThreshold);
