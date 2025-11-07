@@ -84,10 +84,12 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Allow login, error pages, and static assets publicly
+            	
                 .requestMatchers("/api/auth/**", "/error", "/assets/**").permitAll()
                 // **Allow viewing images publicly (if desired)** - Place specific rules first
-                .requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()
+                //.requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/images/view/**").permitAll()
                 // All other /api/** endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
@@ -112,7 +114,8 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500", "http://localhost:5500") // Allow your frontend origin
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://10.10.30.62:5500") // Allow your frontend origin
+                               
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allowed HTTP methods
                         .allowedHeaders("*") // Allow all headers (including Authorization)
                         .allowCredentials(true); // Allow sending credentials (like tokens)

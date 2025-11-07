@@ -23,22 +23,25 @@ import pbl4.common.model.Image; // DTO
 
 import java.io.FileNotFoundException; // Import for error handling
 import java.net.MalformedURLException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import org.slf4j.Logger; // Thêm import
 import org.slf4j.LoggerFactory;
-// Remove unused List import
-// import java.util.List;
+import org.springframework.data.domain.Sort; // <-- THÊM IMPORT NÀY
+import org.springframework.format.annotation.DateTimeFormat; // <-- THÊM IMPORT NÀY
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/images")
-// @CrossOrigin(origins = "*") // Consider global CORS config in SecurityConfig/WebConfig
 public class ImageController {
 
     private final ImageService imageService;
     private final UserService userService;
-    private final Path fileStorageLocation; // Root storage directory (e.g., E:/surveillance_images)
+    private final Path fileStorageLocation; 
 
     public ImageController(ImageService imageService,UserService userService, @Value("${file.upload-dir}") String uploadDir) {
         this.imageService = imageService;
@@ -48,20 +51,15 @@ public class ImageController {
         System.out.println("DEBUG: fileStorageLocation được khởi tạo là: " + this.fileStorageLocation.toString());
     }
 
-    /**
-     * Handles image upload. Service saves file to structured dir and returns DTO with relative path.
-     * Controller builds the full URL for the response.
-     */
     private String buildFileUrl1(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) {
             return null;
         }
-        // Đảm bảo dùng dấu gạch chéo chuẩn (mặc dù param không quá quan trọng)
         String formattedPath = relativePath.replace("\\", "/"); 
         
         return ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/images/view") // Đường dẫn gốc (KHÔNG có dấu / ở cuối)
-                .queryParam("path", formattedPath) // Thêm "?path=..."
+                .path("/api/images/view") 
+                .queryParam("path", formattedPath) 
                 .toUriString();
     }
     @PostMapping("/upload")
@@ -97,40 +95,36 @@ public class ImageController {
     @GetMapping
     public ResponseEntity<Page<Image>> getImages(
             @RequestParam(required = false) Integer cameraId,
-            // Default: page 0, 20 items/page, sort by capturedAt descending
-            @PageableDefault(size = 20, sort = "capturedAt") Pageable pageable) { 
-        
-        // 1. XÁC THỰC VÀ LẤY USERNAME
+            @RequestParam(required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) 
+            LocalDateTime start,
+            
+            @RequestParam(required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) 
+            LocalDateTime end,
+            @PageableDefault(size = 30, sort = "capturedAt", direction = Sort.Direction.DESC) 
+            Pageable pageable) { 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
-        // Nếu chưa đăng nhập (hoặc bị coi là anonymousUser)
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
         }
 
         Page<Image> imagePage;
         try {
-            // 2. LẤY USER ID TỪ SERVICE (Khắc phục lỗi Principal)
             Long userId = userService.getUserIdByUsername(username); 
             
-            // Nếu không tìm thấy ID của người dùng đã xác thực (lỗi logic)
             if (userId == null) {
                  return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
             }
-
-            // 3. GỌI SERVICE LỌC DUY NHẤT (Áp dụng bộ lọc sở hữu)
-            // Phương thức này trong Service phải sử dụng ImageRepository.findByCameraClientUserId(userId, ...)
-            imagePage = imageService.getImageList(userId, pageable, cameraId);
-
-            // 4. Xây dựng URL cho file path (Giữ nguyên logic này)
-            // Lưu ý: Đổi tên hàm buildFileUrl1 thành tên chính xác bạn đang dùng (ví dụ: buildFileUrl)
+            imagePage = imageService.getImageList(userId, pageable, cameraId, start, end);
             imagePage.getContent().forEach(dto -> dto.setFilePath(buildFileUrl1(dto.getFilePath())));
             
             return ResponseEntity.ok(imagePage);
         
         } catch (EntityNotFoundException e) { 
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); 
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); 
         } catch (Exception e) {
              System.err.println("Error fetching images: " + e.getMessage());
              e.printStackTrace(); 
@@ -138,13 +132,7 @@ public class ImageController {
         }
     }
     
-    /**
-     * Serves an image file based on its relative path.
-     * This acts as a secure gateway to the private storage location.
-     */
     private static final Logger logger = LoggerFactory.getLogger(ImageController.class);
-
-    // THAY ĐỔI 1: Xóa phần động khỏi @GetMapping
     @GetMapping("/view") 
     public ResponseEntity<Resource> getImage(
         // THAY ĐỔI 2: Đổi từ @PathVariable thành @RequestParam
@@ -186,9 +174,7 @@ public class ImageController {
         }
     }
 
-    /**
-     * Deletes an image record from the database and its corresponding file.
-     */
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) { 
         try {
@@ -202,8 +188,44 @@ public class ImageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
-    // --- Helper Methods ---
+    @DeleteMapping
+    public ResponseEntity<?> deleteBatchImages(@RequestBody BatchDeleteRequest deleteRequest) {
+        
+        // 1. Lấy thông tin user đang đăng nhập
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        
+        // (Kiểm tra đăng nhập - tùy chọn nhưng nên có)
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(currentUsername)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .body(Map.of("message", "Bạn cần đăng nhập để thực hiện việc này.")); 
+        }
+
+        try {
+            // 2. Lấy danh sách ID từ request
+            List<Long> idsToDelete = deleteRequest.getPhotoIds();
+            
+            if (idsToDelete == null || idsToDelete.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                     .body(Map.of("message", "Danh sách ID không được rỗng."));
+            }
+
+          
+            imageService.deleteImages(idsToDelete, currentUsername);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa thành công " + idsToDelete.size() + " ảnh."));
+
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                 .body(Map.of("message", "Không có quyền xóa một hoặc nhiều ảnh đã chọn."));
+        
+        } catch (Exception e) {
+            // Bắt các lỗi chung khác
+            System.err.println("Lỗi khi xóa hàng loạt: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body(Map.of("message", "Lỗi server khi xóa ảnh."));
+        }
+    }
 
     /**
      * Builds the full, accessible URL for an image given its relative path.

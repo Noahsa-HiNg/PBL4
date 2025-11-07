@@ -79,7 +79,7 @@
      * Hàm gọi API Metrics và đổ dữ liệu vào các thẻ.
      */
     async function loadAdminMetrics() {
-        const metricsUrl = `${API_BASE_URL}/auth/admin/metrics`; // URL API Metrics mới
+        const metricsUrl = `${API_BASE_URL}/admin/metrics`; // URL API Metrics mới
         
         try {
             const response = await fetch(metricsUrl, { method: 'GET', headers: getAuthHeaders() });

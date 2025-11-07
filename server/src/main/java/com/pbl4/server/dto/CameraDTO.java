@@ -11,6 +11,7 @@ public class CameraDTO {
     private String username;
     private String password; // Gửi username/password của camera để client kết nối
     private boolean isActive;
+    
 
     // Constructor để dễ dàng chuyển đổi từ Entity sang DTO
     public CameraDTO(CameraEntity entity) {
