@@ -5,11 +5,13 @@ import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ClientRepository;
+import com.pbl4.server.repository.ImageRepository;
 import com.pbl4.server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 
 import jakarta.transaction.Transactional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Camera; // DTO
 
@@ -22,7 +24,8 @@ public class CameraService {
     private final CameraRepository cameraRepository;
     private final ClientRepository clientRepository; 
     private final UserRepository userRepository;// Cần để tìm Client
-    
+    @Autowired
+    private ImageRepository imageRepository;
 
     public CameraService(CameraRepository cameraRepository,UserRepository userRepository, ClientRepository clientRepository) {
         this.cameraRepository = cameraRepository;
@@ -53,13 +56,6 @@ public class CameraService {
     }
 public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         
-        // 1. Kiểm tra quyền sở hữu (Security check)
-        // Lý tưởng: Bạn nên viết truy vấn kép: findByClientIdAndClientUserId(clientId, currentUserId)
-        
-        // Giả sử bạn sử dụng truy vấn kép đó để đảm bảo người dùng chỉ xem được camera của client họ sở hữu
-        // List<CameraEntity> entities = cameraRepository.findByClientIdAndClientUserId(clientId, currentUserId.intValue());
-        
-        // Nếu không có truy vấn kép, hãy dùng truy vấn cũ (nhưng nên kiểm tra quyền sở hữu ở tầng Service)
         List<CameraEntity> entities = cameraRepository.findByClientId(clientId);
         
         // LƯU Ý BẢO MẬT: Nếu bạn không dùng truy vấn kép, bạn phải kiểm tra trong Service 
@@ -82,6 +78,7 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         if (entity.getClient() != null) {
             dto.setClientId(entity.getClient().getId());
         }
+        
         // ... sao chép các trường khác
         return dto;
     }

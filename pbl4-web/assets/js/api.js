@@ -362,25 +362,46 @@ async function deleteCamera(id) {
 
 // === API: /api/images ===
 
-async function getImageList(page = 0, size = 10, cameraId = null) {
-    // Xây dựng URL với query parameters
-    const params = new URLSearchParams({ page, size });
+async function getImageList(page = 0, size = 20, cameraId = null, start = null, end = null) {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('size', size);
+
+    params.append('sort', 'capturedAt,desc');
+
     if (cameraId != null) {
         params.append('cameraId', cameraId);
     }
-    // Bạn có thể thêm sort nếu cần: params.append('sort', 'capturedAt,desc');
+    if (start != null) {
+        params.append('start', start); 
+    }
+    if (end != null) {
+        params.append('end', end); 
+    }
     const url = `${API_BASE_URL}/images?${params.toString()}`;
+    
     console.log(`Gọi API lấy danh sách ảnh: ${url}`);
 
+    // 3. Gọi API (Giữ nguyên logic fetch của bạn)
     try {
-        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
-        if (!response.ok) await handleResponseError(response);
+        const response = await fetch(url, { 
+            method: 'GET', 
+            headers: getAuthHeaders() // Giả định hàm này lấy token
+        });
+        
+        if (!response.ok) {
+            // Xử lý lỗi (giữ nguyên hàm của bạn)
+            await handleResponseError(response); 
+        }
+        
         return await response.json(); // Server trả về đối tượng Page<>
+        
     } catch (error) {
+        // Xử lý lỗi (giữ nguyên hàm của bạn)
         handleApiError(error, "getImageList");
+        throw error; // Ném lỗi ra để code gọi nó (trong HTML) biết
     }
 }
-
 async function uploadImage(file, cameraId, capturedAt) {
     const url = `${API_BASE_URL}/images/upload`;
     console.log(`Gọi API upload ảnh cho camera ${cameraId}:`, url);
@@ -435,7 +456,39 @@ async function deleteImage(id) {
         handleApiError(error, `deleteImage(${id})`);
     }
 }
+async function deleteBatchImages(imageIds = []) {
+    if (!imageIds || imageIds.length === 0) {
+        return { message: "Không có ảnh nào được chọn" };
+    }
 
+    // Endpoint xóa hàng loạt (DELETE /api/images)
+    const url = `${API_BASE_URL}/images`;
+    console.log(`Gọi API xóa hàng loạt ${imageIds.length} ảnh`);
+    const body = JSON.stringify({
+        photoIds: imageIds
+    });
+
+    try {
+        const headers = getAuthHeaders();
+        headers.set('Content-Type', 'application/json'); // QUAN TRỌNG
+
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: headers,
+            body: body 
+        });
+
+        if (!response.ok) {
+            await handleResponseError(response);
+        }
+        
+        return await response.json(); // Server trả về { message: "..." }
+        
+    } catch (error) {
+        handleApiError(error, "deleteBatchImages");
+        throw error;
+    }
+}
 // === API: /api/users ===
 
 async function createUser(userData) {

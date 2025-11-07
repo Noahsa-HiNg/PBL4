@@ -13,7 +13,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function; // Cần import này nếu bạn dùng getClaimFromToken helper
 
-@Component // Đánh dấu là Spring Bean
+@Component 
 public class JwtTokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
@@ -26,31 +26,25 @@ public class JwtTokenProvider {
                             @Value("${jwt.expiration.ms}") long jwtExpirationMs) {
         if (jwtSecret == null || jwtSecret.length() < 32) {
              logger.warn("Cảnh báo: jwt.secret quá ngắn! Nên sử dụng chuỗi bí mật dài ít nhất 256 bits (32 ký tự an toàn).");
-             // Có thể ném lỗi ở đây nếu muốn bắt buộc secret mạnh
-             // throw new IllegalArgumentException("jwt.secret must be at least 32 characters long");
+
         }
-        // Tạo SecretKey an toàn
         this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         this.jwtExpirationMs = jwtExpirationMs;
         logger.info("JwtTokenProvider khởi tạo với thời gian hết hạn {} ms", jwtExpirationMs);
     }
-
-    // Tạo SecretKey (có thể đặt private)
     private SecretKey getSigningKey() {
         return jwtSecretKey;
     }
 
-    // Tạo Token
     public String generateToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .subject(userPrincipal.getUsername()) // Dùng setSubject thay vì subject
-                .issuedAt(now)                      // Dùng setIssuedAt thay vì issuedAt
-                .expiration(expiryDate)             // Dùng setExpiration thay vì expiration
-                // Chỉ cần truyền SecretKey, thư viện tự biết thuật toán (HS256)
+                .subject(userPrincipal.getUsername()) 
+                .issuedAt(now)                      
+                .expiration(expiryDate)            
                 .signWith(getSigningKey())
                 .compact();
     }

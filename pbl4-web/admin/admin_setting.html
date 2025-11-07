@@ -19,10 +19,9 @@
     <header class="app-header">
         <a href="live_feed.html" class="logo">■ Surveillance System</a>
         <nav>
-            <a href="client_setup.html">Client Setup</a>
-            <a href="live_feed.html" class="active">Live Camera Feed</a>
-            <a href="upload_history.html">Upload History</a>
-            <a href="user_setting.html">User Settings</a>
+            <a href="admin_dashboard.html">Client Setup</a>
+            <a href="user_management.html">Client Setup</a>
+            <a href="admin_setting.html">User Settings</a>
         </nav>
     </header>
 
@@ -148,7 +147,7 @@
                 await logoutUser(); // Gọi hàm logout từ api.js (xóa token)
                 // auth.js sẽ tự động chuyển hướng nếu cần, hoặc ta chuyển hướng ở đây
                  if (typeof window !== 'undefined' && window.location.pathname.split('/').pop() !== 'login.html') {
-                    window.location.href = 'login.html'; // Quay về trang login
+                    window.location.href = '../login.html'; // Quay về trang login
                  }
             } catch (error) {
                 console.error("Lỗi khi đăng xuất:", error);

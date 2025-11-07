@@ -67,7 +67,7 @@ public class CameraController {
 
         return ResponseEntity.ok(cameras);
     }
-    @PutMapping("/{id}/status") // Dùng PUT
+    @PutMapping("/{id}/status") 
     public ResponseEntity<?> updateCameraStatus(
             @PathVariable int id,
             @RequestBody UpdateCameraActiveRequest request,
@@ -85,6 +85,4 @@ public class CameraController {
             return ResponseEntity.internalServerError().body(Map.of("message", "Error updating camera status", "error", e.getMessage()));
         }
     }
-
-    // ... (Thêm các endpoint getById, update, delete tương tự ClientController)
 }

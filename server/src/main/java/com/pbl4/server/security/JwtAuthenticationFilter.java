@@ -1,6 +1,5 @@
-package com.pbl4.server.security; // Đảm bảo đúng package
+package com.pbl4.server.security; 
 
-// --- Các import cần thiết ---
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.security.JwtTokenProvider; // Dịch vụ token
 import jakarta.servlet.FilterChain;
@@ -22,12 +21,6 @@ import java.util.Collections;
 import java.util.HashMap; // Để tạo Map response
 import java.util.Map;
 
-/**
- * Bộ lọc này CHỈ xử lý yêu cầu đăng nhập tại URL được cấu hình (vd: /api/auth/login).
- * Nó KHÔNG kiểm tra token trên các request khác.
- * Nó kế thừa UsernamePasswordAuthenticationFilter để tích hợp vào luồng xác thực của Spring.
- */
-// Lớp này KHÔNG cần @Component vì nó được tạo thủ công trong SecurityConfig
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -37,7 +30,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
 
-    // Lớp nội bộ để dễ dàng đọc JSON request body khi đăng nhập
     private static class LoginRequest {
         public String username;
         public String password;
@@ -74,11 +66,11 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             LoginRequest creds = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
             log.debug("Đang thử xác thực cho user: {}", creds.getUsername());
 
-            // Tạo đối tượng token (chưa được xác thực) từ thông tin đọc được
+
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     creds.getUsername(),
                     creds.getPassword(),
-                    Collections.emptyList() // Authorities sẽ được UserDetailsService cung cấp sau
+                    Collections.emptyList() 
             );
 
             // Giao cho AuthenticationManager (đã được cấu hình với UserDetailsService và PasswordEncoder)
@@ -104,7 +96,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                                           FilterChain chain,
                                           Authentication authResult) throws IOException, ServletException {
 
-        String username = authResult.getName(); // Lấy username từ đối tượng Authentication đã thành công
+        String username = authResult.getName(); 
         log.info("Xác thực thành công cho user: {}", username);
 
         // Dùng JwtTokenProvider để tạo chuỗi JWT token
