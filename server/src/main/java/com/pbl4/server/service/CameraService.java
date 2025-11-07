@@ -1,5 +1,7 @@
 package com.pbl4.server.service;
 
+import com.pbl4.server.dto.AddCameraRequest;
+import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.entity.CameraEntity;
 import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.UserEntity;
@@ -13,7 +15,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Camera; // DTO
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -116,6 +121,51 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         camera.setActive(active); // Cập nhật cột is_active
         cameraRepository.save(camera);
         System.out.println("Cập nhật trạng thái Camera ID " + camera.getId() + " (is_active) thành: " + active);
+    }
+    @Transactional
+    public CameraDTO addCamera(AddCameraRequest request, String authUsername) {
+        // 1. Xác thực: User (từ token) có sở hữu Client (từ request) không?
+        UserEntity user = userRepository.findByUsername(authUsername)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + authUsername));
+        
+        ClientEntity client = clientRepository.findById(request.getClientId())
+                .orElseThrow(() -> new EntityNotFoundException("Client (ID: " + request.getClientId() + ") not found"));
+        
+        if (!client.getUser().equals(user)) {
+            throw new SecurityException("User " + authUsername + " không sở hữu Client " + request.getClientId());
+        }
+
+        // 2. Kiểm tra Xung đột: Camera (vật lý) đã tồn tại chưa?
+        // Kiểm tra xem (IP + Username) đã tồn tại ở BẤT KỲ đâu trong bảng Cameras chưa
+        Optional<CameraEntity> existingPhysicalCamera = cameraRepository.findByIpAddressAndUsername(
+            request.getIpAddress(), request.getUsername()
+        );
+        Optional<CameraEntity> existingPhysicalCamera2 = cameraRepository.findByIpAddressAndClient_Id(
+                request.getIpAddress(), request.getClientId()
+            );
+        
+
+        if (existingPhysicalCamera.isPresent() || existingPhysicalCamera2.isPresent()) {
+            // Nếu tìm thấy -> Báo lỗi xung đột
+            throw new IllegalStateException("Xung đột: Camera (IP: " + request.getIpAddress() + 
+                    ", User: " + request.getUsername() + ") đã được thêm vào hệ thống.");
+        }
+
+        // 3. Tạo mới Camera (vì không xung đột)
+        CameraEntity newCamera = new CameraEntity();
+        newCamera.setClient(client); // Gán camera cho client này
+        newCamera.setCameraName(request.getCameraName());
+        newCamera.setIpAddress(request.getIpAddress());
+        newCamera.setUsername(request.getUsername());
+        newCamera.setPassword(request.getPassword()); // (Nên mã hóa mật khẩu camera nếu có thể)
+        newCamera.setOnvifUrl(request.getOnvifUrl());
+        newCamera.setActive(false); // Trạng thái ban đầu là offline
+        newCamera.setCreatedAt(Timestamp.from(Instant.now()));
+        
+        CameraEntity savedCamera = cameraRepository.save(newCamera);
+        
+        // Trả về DTO của camera vừa tạo
+        return new CameraDTO(savedCamera); 
     }
 
 }

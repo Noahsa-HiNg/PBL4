@@ -3,6 +3,7 @@ package com.pbl4.server.repository;
 import com.pbl4.server.entity.CameraEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -20,4 +21,7 @@ public interface CameraRepository extends JpaRepository<CameraEntity, Integer> {
     @Transactional
     @Query("UPDATE CameraEntity c SET c.isActive = :isActive WHERE c.client.id = :clientId")
     int updateAllByClientId(@Param("clientId") int clientId, @Param("isActive") boolean isActive);
+	Optional<CameraEntity> findByIpAddressAndUsername(String ipAddress, String username);
+	Optional<CameraEntity> findByIpAddressAndClient_Id(String ipAddress, int clientId);
+
 }

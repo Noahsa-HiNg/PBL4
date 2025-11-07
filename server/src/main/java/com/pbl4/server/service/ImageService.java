@@ -236,8 +236,8 @@ public Page<Image> getImageList(Long userId, Pageable pageable, Integer cameraId
         clientRepository.findById(clientId).ifPresent(client -> {
             // Đặt trạng thái: "ACTIVE"
             client.setStatus("ACTIVE"); 
-            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
-            client.setLastPingAttempt(null); 
+//            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
+//            client.setLastPingAttempt(null); 
             clientRepository.save(client);
         });
     }

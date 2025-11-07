@@ -74,6 +74,7 @@
 	</section>
 	<section name="MavenProjectImportWizardPage">
 		<list key="rootDirectory">
+			<item value="C:\Users\Lenovo Legion\git\PBL4"/>
 			<item value="C:\Users\Lenovo Legion\git"/>
 		</list>
 		<list key="projectNameTemplate">
