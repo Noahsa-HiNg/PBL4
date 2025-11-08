@@ -14,14 +14,16 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.Set; // <-- Import Set
+import java.util.Collections;
 @Component
 public class MyWebSocketHandler extends TextWebSocketHandler {
 
     // SỬA LẠI MAPS:
     // Map này lưu các session đã được xác thực
     // Key: username, Value: Session
-    private final Map<String, WebSocketSession> sessionsByUsername = new ConcurrentHashMap<>();
+    //private final Map<String, WebSocketSession> sessionsByUsername = new ConcurrentHashMap<>();
+	private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
     
     // Map này giúp tra cứu ngược để dọn dẹp khi client ngắt kết nối
     // Key: sessionId, Value: username
@@ -45,11 +47,19 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         // Client ngắt kết nối, dọn dẹp cả 2 map
-        String username = userBySessionId.remove(session.getId());
+    	String username = userBySessionId.remove(session.getId());
         if (username != null) {
-            sessionsByUsername.remove(username);
+            Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
+            if (userSessions != null) {
+                // Xóa session cụ thể này khỏi Set
+                userSessions.remove(session); 
+                // Nếu đây là session cuối cùng, xóa cả key username
+                if (userSessions.isEmpty()) {
+                    sessionsByUsername.remove(username);
+                }
+            }
             System.out.println("WebSocket: User " + username + " (Session " + session.getId() + ") đã ngắt kết nối.");
-        } else {
+        }else {
             System.out.println("WebSocket: Client " + session.getId() + " (chưa xác thực) đã ngắt kết nối.");
         }
     }
@@ -76,7 +86,10 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                     // 3. Token hợp lệ -> Lấy username và LƯU LẠI
                     String username = tokenProvider.getUsernameFromJWT(token);
                     
-                    sessionsByUsername.put(username, session);
+                    Set<WebSocketSession> userSessions = sessionsByUsername.computeIfAbsent(
+                            username, k -> Collections.newSetFromMap(new ConcurrentHashMap<>())
+                        );
+                    userSessions.add(session);
                     userBySessionId.put(session.getId(), username);
                     
                     System.out.println("WebSocket: User '" + username + "' đã xác thực thành công.");
@@ -101,19 +114,24 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
      * HÀM NÀY BÂY GIỜ ĐÃ CHẠY ĐÚNG!
      */
     public void sendMessageToUser(String username, String jsonMessage) {
-        // 1. Tìm session của user
-        WebSocketSession session = sessionsByUsername.get(username);
+        // 1. Lấy TẤT CẢ sessions của user
+        Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
         
-        // 2. Kiểm tra xem họ có đang kết nối không
-        if (session != null && session.isOpen()) {
-            try {
-                System.out.println("WebSocket: Đang gửi tin cho '" + username + "': " + jsonMessage);
-                session.sendMessage(new TextMessage(jsonMessage));
-            } catch (IOException e) {
-                System.err.println("Lỗi khi gửi WebSocket cho " + username + ": " + e.getMessage());
+        if (userSessions == null || userSessions.isEmpty()) {
+            System.out.println("WebSocket: Không tìm thấy session nào đang hoạt động cho user: " + username);
+            return;
+        }
+
+        // 2. Lặp qua từng session và gửi
+        for (WebSocketSession session : userSessions) {
+            if (session.isOpen()) {
+                try {
+                    System.out.println("WebSocket: Đang gửi tin cho '" + username + "' (Session: " + session.getId() + ")");
+                    session.sendMessage(new TextMessage(jsonMessage));
+                } catch (IOException e) {
+                    System.err.println("Lỗi khi gửi WebSocket cho " + username + " (Session: " + session.getId() + "): " + e.getMessage());
+                }
             }
-        } else {
-            System.out.println("WebSocket: Không tìm thấy session hoặc session đã đóng cho user: " + username);
         }
     }
 //    public void sendMessageToUserByClientId(int clientId, String jsonMessage) {
