@@ -165,11 +165,9 @@ public class ClientService {
     public Client updateClient(int id, Client clientDto) {
         ClientEntity existingEntity = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
-        
-        // Cập nhật các trường
+
         existingEntity.setClientName(clientDto.getClientName());
         existingEntity.setStatus(clientDto.getStatus());
-        // ... cập nhật các trường khác nếu cần
 
         ClientEntity updatedEntity = clientRepository.save(existingEntity);
         return toDto(updatedEntity);
@@ -242,6 +240,11 @@ public class ClientService {
     }
     public int checkStatus(int clientId) {
     	return clientRepository.findStatusById(clientId);
+    }
+    public String getUsernameByClientId(int clientId) {
+        // Gọi phương thức từ Repository, dùng .orElse(null) để trả về String
+        return clientRepository.findUsernameByClientId(clientId)
+                               .orElse(null); // Trả về null nếu không tìm thấy
     }
     
     

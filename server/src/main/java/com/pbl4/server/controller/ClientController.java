@@ -90,10 +90,58 @@ public class ClientController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
-        return ResponseEntity.ok(clientService.updateClient(id, clientDetails));
-    }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<Client> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
+//        
+//        // 1. XÁC THỰC VÀ LẤY USER ID
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String username = authentication.getName();
+//        
+//        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
+//        }
+//
+//        Long currentUserId = userService.getUserIdByUsername(username);
+//
+//        if (currentUserId == null) {
+//             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); 
+//        }
+//
+//        try {
+//            // 2. GỌI SERVICE CẬP NHẬT (Service phải kiểm tra quyền sở hữu)
+//            // Truyền ID người dùng đang đăng nhập vào Service để kiểm tra quyền
+//            Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
+//            
+//            
+//            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
+//            if (webSocketHandler != null) {
+//                // Lấy username sở hữu Client (để gửi tin)
+//                String ownerUsername = clientService.getUsernameByClientId(id); 
+//
+//                // Chuẩn bị JSON Payload (gửi lại Client DTO đã cập nhật)
+//                String jsonMessage = String.format(
+//                    "{\"type\": \"CLIENT_CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
+//                    id, // Client ID
+//                    updatedClient.toString() // Cần ObjectMapper an toàn hơn
+//                );
+//                
+//                // Gửi tin nhắn đến người dùng sở hữu Client này
+//                if (ownerUsername != null) {
+//                    webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
+//                }
+//            }
+//
+//            return ResponseEntity.ok(updatedClient);
+//            
+//        } catch (SecurityException e) {
+//            // Lỗi phân quyền (User cố cập nhật Client không phải của mình)
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 403 FORBIDDEN
+//        } catch (RuntimeException e) {
+//            // Lỗi Client không tìm thấy, hoặc lỗi khác
+//            System.err.println("Error updating client: " + e.getMessage());
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); 
+//        }
+//    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable int id) {

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -29,4 +31,6 @@ public interface ClientRepository extends JpaRepository<ClientEntity, Integer> {
     // 3. Tìm client đang ACTIVE nhưng đã quá hạn ảnh (ACTIVE -> SUSPENDED)
    
     List<ClientEntity> findByStatusAndLastImageReceivedBefore(String status, Timestamp timeThreshold);
+    @Query("SELECT c.user.username FROM ClientEntity c WHERE c.id = :clientId")
+    Optional<String> findUsernameByClientId(@Param("clientId") int clientId);
 }

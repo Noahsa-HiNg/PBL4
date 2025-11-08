@@ -84,7 +84,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Allow login, error pages, and static assets publicly
-            	
+            	.requestMatchers("/ws/updates/**").permitAll()
                 .requestMatchers("/api/auth/**", "/error", "/assets/**").permitAll()
                 // **Allow viewing images publicly (if desired)** - Place specific rules first
                 //.requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()

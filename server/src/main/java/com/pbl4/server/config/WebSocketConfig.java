@@ -17,6 +17,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(myWebSocketHandler, "/ws/updates") // Đăng ký handler tại URL này
-                .setAllowedOrigins("http://127.0.0.1:5500"); // Chỉ cho phép client này kết nối
+                .setAllowedOrigins("*"); // Chỉ cho phép client này kết nối
     }
 }

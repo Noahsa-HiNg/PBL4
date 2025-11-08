@@ -2,6 +2,8 @@ package com.pbl4.server.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Thêm import
 import com.pbl4.server.security.JwtTokenProvider; // Thêm import
+import com.pbl4.server.service.ClientService;
+
 import org.springframework.beans.factory.annotation.Autowired; // Thêm import
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -24,7 +26,8 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     // Map này giúp tra cứu ngược để dọn dẹp khi client ngắt kết nối
     // Key: sessionId, Value: username
     private final Map<String, String> userBySessionId = new ConcurrentHashMap<>();
-
+    @Autowired
+    private ClientService clientService;
     // === INJECT CÁC DEPENDENCY CẦN THIẾT ===
     @Autowired
     private JwtTokenProvider tokenProvider;
@@ -104,7 +107,6 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         // 2. Kiểm tra xem họ có đang kết nối không
         if (session != null && session.isOpen()) {
             try {
-                // 3. Gửi tin nhắn
                 System.out.println("WebSocket: Đang gửi tin cho '" + username + "': " + jsonMessage);
                 session.sendMessage(new TextMessage(jsonMessage));
             } catch (IOException e) {
@@ -114,4 +116,13 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             System.out.println("WebSocket: Không tìm thấy session hoặc session đã đóng cho user: " + username);
         }
     }
+//    public void sendMessageToUserByClientId(int clientId, String jsonMessage) {
+//        // 1. Tìm username của User sở hữu Client này (Cần thêm hàm này vào ClientService)
+//        String username = clientService.getUsernameByClientId(clientId); 
+//        
+//        if (username != null) {
+//            // 2. Gửi tin nhắn xuống session của User đó
+//            sendMessageToUser(username, jsonMessage); 
+//        }
+//    }
 }

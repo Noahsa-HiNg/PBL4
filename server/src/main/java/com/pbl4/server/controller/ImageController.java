@@ -2,6 +2,7 @@ package com.pbl4.server.controller;
 
 import com.pbl4.server.service.ImageService;
 import com.pbl4.server.service.UserService;
+import com.pbl4.server.websocket.MyWebSocketHandler;
 
 import jakarta.persistence.EntityNotFoundException; // Import for error handling
 import org.springframework.beans.factory.annotation.Value;
@@ -42,10 +43,12 @@ public class ImageController {
     private final ImageService imageService;
     private final UserService userService;
     private final Path fileStorageLocation; 
+    private final MyWebSocketHandler webSocketHandler;
 
-    public ImageController(ImageService imageService,UserService userService, @Value("${file.upload-dir}") String uploadDir) {
+    public ImageController(ImageService imageService,UserService userService,MyWebSocketHandler webSocketHandler, @Value("${file.upload-dir}") String uploadDir) {
         this.imageService = imageService;
         this.userService = userService;
+        this.webSocketHandler = webSocketHandler;
         // Normalize the base storage path
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         System.out.println("DEBUG: fileStorageLocation được khởi tạo là: " + this.fileStorageLocation.toString());
@@ -69,6 +72,8 @@ public class ImageController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File cannot be empty.");
         }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
         try {
         	Timestamp capturedAt = new Timestamp(capturedAtMillis);
             // Service returns DTO with the relative path stored
@@ -76,7 +81,16 @@ public class ImageController {
             
             // Build the full, accessible URL using the relative path
             savedDto.setFilePath(buildFileUrl1(savedDto.getFilePath())); 
-            
+            if (webSocketHandler != null && !"anonymousUser".equals(currentUsername)) {
+                String jsonMessage = String.format(
+                    "{\"type\": \"NEW_SNAPSHOT\", \"message\": \"Ảnh mới đã được tải lên.\", \"image\": %s}",
+                    // Nếu dùng ObjectMapper: objectMapper.writeValueAsString(savedDto) 
+                    "{\"id\":" + savedDto.getId() + ", \"camera_id\":" + savedDto.getCameraId() + ", \"url\":\"" + savedDto.getFilePath() + "\"}"
+                );
+                
+                // Gửi tin nhắn đến người dùng hiện tại
+                webSocketHandler.sendMessageToUser(currentUsername, jsonMessage);
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
         } catch (EntityNotFoundException e) { // Catch specific error from service
              return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

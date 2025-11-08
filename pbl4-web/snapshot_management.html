@@ -242,6 +242,7 @@
 
     <script src="/assets/js/config.js"></script>
     <script src="/assets/js/api.js"></script> 
+    <script src="/assets/js/websocket.js"></script>
 
     <script>
         // === DOM ELEMENTS ===
@@ -283,6 +284,9 @@
             await loadFilterOptions();
             loadImages(currentPage);
             setupEventListeners();
+            if (localStorage.getItem('authToken')) {
+            connectWebSocket();
+    }
         });
 
         // ----------------------------------------------------
@@ -317,7 +321,7 @@
             listBody.innerHTML = '<p class="loading-placeholder">Đang tải thư viện ảnh...</p>'; 
             
             try {
-                const size = 10; // Số ảnh mỗi trang
+                const size = 20; // Số ảnh mỗi trang
                 
                 // GỌI API ĐÃ CẬP NHẬT
                 const pageData = await getImageList(
@@ -439,7 +443,10 @@
                 
                 loadImages(0); 
             });
-
+            window.snapshotUpdateCallback = () => {
+                alert('Đang tải ảnh mới...');
+                loadImages(0); 
+            };
             clearFilterBtn.addEventListener('click', () => {
                 clientFilterSelect.value = 'all';
                 startDateInput.value = '';
@@ -572,7 +579,6 @@
             modalImg.src = ""; 
             modalDeleteBtn.removeAttribute('data-delete-id'); 
         }
-
     </script>
 </body>
 </html>
