@@ -1,5 +1,6 @@
 package com.pbl4.server.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.dto.AddCameraRequest;
 import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.entity.CameraEntity;
@@ -9,8 +10,11 @@ import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.repository.ImageRepository;
 import com.pbl4.server.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.pbl4.server.websocket.MyWebSocketHandler;
 
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +23,9 @@ import pbl4.common.model.Camera; // DTO
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -31,6 +37,13 @@ public class CameraService {
     private final UserRepository userRepository;// Cần để tìm Client
     @Autowired
     private ImageRepository imageRepository;
+    
+
+    @Autowired
+    private MyWebSocketHandler webSocketHandler; // Handler WebSocket
+
+    @Autowired
+    private ObjectMapper objectMapper; // Chuyển đổi JSON
 
     public CameraService(CameraRepository cameraRepository,UserRepository userRepository, ClientRepository clientRepository) {
         this.cameraRepository = cameraRepository;
@@ -164,5 +177,82 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         // Trả về DTO của camera vừa tạo
         return new CameraDTO(savedCamera); 
     }
+    @Transactional // Đảm bảo tất cả các thao tác DB là một giao dịch
+    public CameraDTO updateCamera(Integer id, CameraDTO cameraDTO) throws Exception {
+        
+        // 1. Tìm Camera cũ trong Database (Sử dụng JpaRepository)
+        CameraEntity existingCamera = cameraRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy camera với ID: " + id));
 
+        // 2. Cập nhật thông tin từ DTO vào Entity
+        // (Giả sử CameraEntity có các setter này)
+        existingCamera.setCameraName(cameraDTO.getCameraName());
+        existingCamera.setIpAddress(cameraDTO.getIpAddress());
+        existingCamera.setUsername(cameraDTO.getUsername());
+        existingCamera.setPassword(cameraDTO.getPassword());
+        existingCamera.setOnvifUrl(cameraDTO.getOnvifUrl());
+        // ... (Cập nhật các trường khác nếu có)
+
+        // 3. Lưu lại vào Database (Sử dụng JpaRepository)
+        CameraEntity savedCamera = cameraRepository.save(existingCamera);
+
+        // 4. GỬI THÔNG BÁO WEBSOCKET
+        // Tạo nội dung tin nhắn
+        Map<String, Object> messagePayload = new HashMap<>();
+        messagePayload.put("type", "CAMERA_UPDATED");
+        messagePayload.put("camera", convertToDto(savedCamera)); // Gửi DTO đã cập nhật
+        
+        String jsonMessage = objectMapper.writeValueAsString(messagePayload);
+
+        // Lấy "username" để gửi
+        // Dựa trên repository, cấu trúc của bạn là:
+        // CameraEntity -> ClientEntity -> UserEntity
+        
+        String username = null;
+        if (savedCamera.getClient() != null && savedCamera.getClient().getUser() != null) {
+            // Giả sử UserEntity mới là nơi chứa username
+            username = savedCamera.getClient().getUser().getUsername(); // <-- ĐIỀU CHỈNH
+        } else {
+             throw new Exception("Không thể gửi WebSocket: Camera " + id + " không có Client hoặc User liên kết.");
+        }
+        
+        if (username != null) {
+            webSocketHandler.sendMessageToUser(username, jsonMessage);
+        } else {
+            System.err.println("Không thể gửi WebSocket: User của Camera ID " + id + " không có username.");
+        }
+
+        // 5. Trả về DTO cho Controller
+        return convertToDto(savedCamera);
+    }
+    
+    // --- Các hàm tiện ích ---
+
+    /**
+     * Hàm tiện ích để chuyển đổi Entity sang DTO
+     * (Cần đảm bảo CameraDTO có đủ setter)
+     */
+    private CameraDTO convertToDto(CameraEntity entity) {
+        CameraDTO dto = new CameraDTO();
+        dto.setId(entity.getId());
+        dto.setCameraName(entity.getCameraName());
+        dto.setIpAddress(entity.getIpAddress());
+        dto.setUsername(entity.getUsername());
+        // QUAN TRỌNG: Không bao giờ gửi mật khẩu về client
+        dto.setPassword(null); // hoặc một chuỗi "*****"
+        dto.setUrl(entity.getOnvifUrl());
+        // ...
+        return dto;
+    }
+    
+    /**
+     * Lớp Exception tùy chỉnh để trả về 404
+     */
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public static class ResourceNotFoundException extends RuntimeException {
+        public ResourceNotFoundException(String message) {
+            super(message);
+        }
+    }
 }
+    

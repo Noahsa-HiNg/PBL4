@@ -4,6 +4,8 @@ import com.pbl4.server.dto.AddCameraRequest;
 import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.dto.UpdateCameraActiveRequest;
 import com.pbl4.server.service.CameraService;
+import com.pbl4.server.service.CameraService.ResourceNotFoundException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -111,6 +113,24 @@ public class CameraController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Error updating camera status", "error", e.getMessage()));
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateCamera(@PathVariable Integer id, @RequestBody CameraDTO cameraDTO) {
+        try {
+            // 1. Gọi service để thực hiện logic
+            // Chúng ta truyền cả id và DTO để đảm bảo an toàn
+            CameraDTO updatedCamera = cameraService.updateCamera(id, cameraDTO);
+            
+            // 2. Trả về 200 OK cùng với camera đã cập nhật
+            return ResponseEntity.ok(updatedCamera);
+            
+        } catch (ResourceNotFoundException e) { // Đây là một Exception tùy chỉnh (xem bên dưới)
+            // 3. Trả về 404 nếu không tìm thấy camera
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (Exception e) {
+            // 4. Trả về 500 nếu có lỗi server khác
+            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
         }
     }
 }

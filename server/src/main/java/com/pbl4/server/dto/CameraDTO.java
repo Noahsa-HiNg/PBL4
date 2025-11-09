@@ -35,4 +35,38 @@ public class CameraDTO {
     public String getUsername() { return username; }
     public String getPassword() { return password; }
     public boolean isActive() { return isActive; } // Jackson tự chuyển thành "active": true/false
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setCameraName(String cameraName) {
+        this.cameraName = cameraName;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+    /**
+     * Đặt tên đăng nhập (RTSP) cho camera.
+     * @param username Tên đăng nhập
+     */
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    /**
+     * Đặt mật khẩu (RTSP) cho camera.
+     * @param password Mật khẩu
+     */
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    /**
+     * Đặt URL (RTSP) đầy đủ cho camera.
+     * @param url URL
+     */
+    public void setUrl(String url) {
+        this.onvifUrl = url;
+    }
 }
