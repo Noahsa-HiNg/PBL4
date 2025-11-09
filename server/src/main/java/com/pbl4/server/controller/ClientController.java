@@ -1,12 +1,16 @@
 package com.pbl4.server.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.dto.ClientRegisterRequest;
 import com.pbl4.server.dto.ClientRegisterResponse;
 import com.pbl4.server.service.ClientService;
 import com.pbl4.server.service.UserService;
+import com.pbl4.server.websocket.MyWebSocketHandler;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -17,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import pbl4.common.model.Client;
 
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.security.core.Authentication;
 @RestController
 @RequestMapping("/api/clients")
@@ -24,10 +30,13 @@ public class ClientController {
 
     private final ClientService clientService;
     private final UserService userService;
-
-    public ClientController(ClientService clientService, UserService userService) {
+    private final MyWebSocketHandler webSocketHandler;
+    private final ObjectMapper objectMapper;
+    public ClientController(ClientService clientService, UserService userService,MyWebSocketHandler webSocketHandler, ObjectMapper objectMapper) {
         this.clientService = clientService;
         this.userService = userService;
+        this.webSocketHandler = webSocketHandler;
+        this.objectMapper = objectMapper;
     }
     @PostMapping("/register")
     public ResponseEntity<ClientRegisterResponse> registerClient(
@@ -90,58 +99,58 @@ public class ClientController {
         }
     }
 
-//    @PutMapping("/{id}")
-//    public ResponseEntity<Client> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
-//        
-//        // 1. XÁC THỰC VÀ LẤY USER ID
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String username = authentication.getName();
-//        
-//        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
-//        }
-//
-//        Long currentUserId = userService.getUserIdByUsername(username);
-//
-//        if (currentUserId == null) {
-//             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); 
-//        }
-//
-//        try {
-//            // 2. GỌI SERVICE CẬP NHẬT (Service phải kiểm tra quyền sở hữu)
-//            // Truyền ID người dùng đang đăng nhập vào Service để kiểm tra quyền
-//            Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
-//            
-//            
-//            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
-//            if (webSocketHandler != null) {
-//                // Lấy username sở hữu Client (để gửi tin)
-//                String ownerUsername = clientService.getUsernameByClientId(id); 
-//
-//                // Chuẩn bị JSON Payload (gửi lại Client DTO đã cập nhật)
-//                String jsonMessage = String.format(
-//                    "{\"type\": \"CLIENT_CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
-//                    id, // Client ID
-//                    updatedClient.toString() // Cần ObjectMapper an toàn hơn
-//                );
-//                
-//                // Gửi tin nhắn đến người dùng sở hữu Client này
-//                if (ownerUsername != null) {
-//                    webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
-//                }
-//            }
-//
-//            return ResponseEntity.ok(updatedClient);
-//            
-//        } catch (SecurityException e) {
-//            // Lỗi phân quyền (User cố cập nhật Client không phải của mình)
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 403 FORBIDDEN
-//        } catch (RuntimeException e) {
-//            // Lỗi Client không tìm thấy, hoặc lỗi khác
-//            System.err.println("Error updating client: " + e.getMessage());
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); 
-//        }
-//    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
+        
+        // 1. XÁC THỰC VÀ LẤY USER ID
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Token is invalid."));
+        }
+
+        Long currentUserId = userService.getUserIdByUsername(username);
+
+        if (currentUserId == null) {
+             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found in context."));
+        }
+
+        try {
+            // 2. GỌI SERVICE CẬP NHẬT (Service đã kiểm tra quyền sở hữu)
+            Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
+            
+            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
+            
+            String ownerUsername = clientService.getUsernameByClientId(id); 
+
+            if (webSocketHandler != null && ownerUsername != null) {
+                
+                // Tạo JSON Payload (Gửi toàn bộ DTO Client đã cập nhật)
+                String dtoJson = objectMapper.writeValueAsString(updatedClient);
+                String jsonMessage = String.format(
+                    "{\"type\": \"CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
+                    id, dtoJson
+                );
+                
+                // GỬI TIN ĐẾN TẤT CẢ SESSIONS CỦA USER ĐÓ
+                webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
+            }
+            return ResponseEntity.ok(updatedClient);
+            
+        } catch (EntityNotFoundException e) {
+            // Bắt lỗi "Access Denied" hoặc "Not Found" từ Service
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        } catch (JsonProcessingException e) {
+            // Bắt lỗi khi tạo JSON cho WebSocket
+            System.err.println("Client updated, but WebSocket notification failed: " + e.getMessage());
+            // Trả về thành công, vì Client đã được cập nhật
+            return ResponseEntity.ok(Map.of("message", "Client updated, but notification failed."));
+        } catch (Exception e) {
+            // Bắt các lỗi chung khác
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
+        }
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable int id) {

@@ -79,9 +79,11 @@ function handleWebSocketMessage(jsonPayload) {
                 break;
                 
             case 'CLIENT_STATUS_UPDATE':
-                // Thông báo từ ClientMonitorService khi Client chuyển sang OFFLINE
-                console.warn(`Client ID ${message.clientId} đã chuyển sang trạng thái: ${message.status}`);
-                // Bạn có thể cập nhật trạng thái Client trên trang Dashboard Admin tại đây.
+                console.log("WebSocket: Cấu hình Client đã được cập nhật từ Server.");
+                // Tải lại bảng Client để hiển thị thay đổi
+                if (window.location.pathname.includes('client_setup.html')) {
+                    loadClients(); 
+                }
                 break;
                 
             default:

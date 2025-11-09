@@ -11,6 +11,7 @@ import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.repository.UserRepository;
 
 import io.jsonwebtoken.lang.Collections;
+import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Client; // DTO
@@ -162,17 +163,17 @@ public class ClientService {
         return toDto(entity);
     }
 
-    public Client updateClient(int id, Client clientDto) {
-        ClientEntity existingEntity = clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
-
-        existingEntity.setClientName(clientDto.getClientName());
-        existingEntity.setStatus(clientDto.getStatus());
-
-        ClientEntity updatedEntity = clientRepository.save(existingEntity);
-        return toDto(updatedEntity);
-    }
-
+//    public Client updateClient(int id, Client clientDto) {
+//        ClientEntity existingEntity = clientRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
+//
+//        existingEntity.setClientName(clientDto.getClientName());
+//        existingEntity.setStatus(clientDto.getStatus());
+//
+//        ClientEntity updatedEntity = clientRepository.save(existingEntity);
+//        return toDto(updatedEntity);
+//    }
+//
     public void deleteClient(int id) {
         if (!clientRepository.existsById(id)) {
             throw new RuntimeException("Client not found with id: " + id);
@@ -180,14 +181,51 @@ public class ClientService {
         clientRepository.deleteById(id);
     }
 
+    public String getUsernameByClientId(int clientId) {
+        return clientRepository.findUsernameByClientId(clientId)
+                               .orElse(null); // Trả về null nếu không tìm thấy
+    }
+    public Client updateClient(int id,Client clientDto,Long currentUserId) {
+    	ClientEntity existingEntity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
+    	if (existingEntity == null) {
+            // Ném ra lỗi. Controller sẽ bắt lỗi này và trả về 404 hoặc 403
+            throw new EntityNotFoundException("Access Denied: Client not found with id: " + id + " or user " + currentUserId + " does not own it.");
+        }
+    	if (clientDto.getClientName()!=null) {
+    		existingEntity.setClientName(clientDto.getClientName());
+    	}
+    	if (clientDto.getImageHeight()!=null) {
+    		existingEntity.setImageHeight(clientDto.getImageHeight());
+    	}
+    	if (clientDto.getImageWidth()!=null) {
+    		existingEntity.setImageWidth(clientDto.getImageWidth());
+    	}
+    	
+        if (clientDto.getCompressionQuality() != null) {
+            existingEntity.setCompressionQuality(clientDto.getCompressionQuality());
+        }
+        if (clientDto.getCaptureIntervalSeconds() != null) {
+            existingEntity.setCaptureIntervalSeconds(clientDto.getCaptureIntervalSeconds());
+        }
+        ClientEntity updatedEntity = clientRepository.save(existingEntity);
+    	
+    	return toDto(updatedEntity);            
+    }
+    
     // --- Helper Methods for Mapping ---
     private Client toDto(ClientEntity entity) {
-        Client dto = new Client();
+    	Client dto = new Client();
         dto.setId(entity.getId());
         dto.setClientName(entity.getClientName());
-        dto.setIpAddress(entity.getIpAddress());
         dto.setStatus(entity.getStatus());
-        // ... sao chép các trường khác
+        dto.setIpAddress(entity.getIpAddress());
+        dto.setCaptureIntervalSeconds(entity.getCaptureIntervalSeconds());
+        dto.setImageWidth(entity.getImageWidth());
+        dto.setImageHeight(entity.getImageHeight());
+        dto.setCompressionQuality(entity.getCompressionQuality());
+        if (entity.getUser() != null) {
+            dto.setUserId(entity.getUser().getId());
+        }
         return dto;
     }
 
@@ -196,7 +234,11 @@ public class ClientService {
         entity.setClientName(dto.getClientName());
         entity.setIpAddress(dto.getIpAddress());
         entity.setStatus(dto.getStatus());
-        // ... sao chép các trường khác
+        entity.setIpAddress(dto.getIpAddress());
+        entity.setCaptureIntervalSeconds(dto.getCaptureIntervalSeconds());
+        entity.setImageWidth(dto.getImageWidth());
+        entity.setImageHeight(dto.getImageHeight());
+        entity.setCompressionQuality(dto.getCompressionQuality());
         return entity;
     }
     
@@ -241,11 +283,5 @@ public class ClientService {
     public int checkStatus(int clientId) {
     	return clientRepository.findStatusById(clientId);
     }
-    public String getUsernameByClientId(int clientId) {
-        // Gọi phương thức từ Repository, dùng .orElse(null) để trả về String
-        return clientRepository.findUsernameByClientId(clientId)
-                               .orElse(null); // Trả về null nếu không tìm thấy
-    }
-    
     
 }

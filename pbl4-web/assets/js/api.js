@@ -185,18 +185,6 @@ async function createClient(clientData) {
     }
 }
 
-async function getClientList() {
-    const url = `${API_BASE_URL}/clients`;
-    console.log("Gọi API lấy danh sách client:", url);
-    try {
-        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
-        if (!response.ok) await handleResponseError(response);
-        return await response.json();
-    } catch (error) {
-        handleApiError(error, "getClientList");
-    }
-}
-
 async function getClientById(id) {
     const url = `${API_BASE_URL}/clients/${id}`;
     console.log(`Gọi API lấy client ${id}:`, url);

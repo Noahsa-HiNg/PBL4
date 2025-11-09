@@ -13,8 +13,8 @@ public class ClientDTO {
     private Timestamp lastHeartbeat; // Sử dụng Timestamp hoặc kiểu dữ liệu phù hợp
     private Integer imageWidth;
     private Integer imageHeight;
-    private int captureIntervalSeconds;
-    private int compressionQuality;
+    private Integer captureIntervalSeconds;
+    private Integer compressionQuality;
     private Timestamp createdAt;
     private Timestamp updatedAt;
     // Không cần user_id hoặc machine_id ở đây trừ khi client cần
@@ -42,11 +42,53 @@ public class ClientDTO {
     public Timestamp getLastHeartbeat() { return lastHeartbeat; }
     public Integer getImageWidth() { return imageWidth; }
     public Integer getImageHeight() { return imageHeight; }
-    public int getCaptureIntervalSeconds() { return captureIntervalSeconds; }
-    public int getCompressionQuality() { return compressionQuality; }
+    public Integer getCaptureIntervalSeconds() { return captureIntervalSeconds; }
+    public Integer getCompressionQuality() { return compressionQuality; }
     public Timestamp getCreatedAt() { return createdAt; }
     public Timestamp getUpdatedAt() { return updatedAt; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setLastHeartbeat(Timestamp lastHeartbeat) {
+        this.lastHeartbeat = lastHeartbeat;
+    }
+
+    public void setImageWidth(Integer imageWidth) {
+        this.imageWidth = imageWidth;
+    }
+
+    public void setImageHeight(Integer imageHeight) {
+        this.imageHeight = imageHeight;
+    }
+
+    public void setCaptureIntervalSeconds(Integer captureIntervalSeconds) {
+        this.captureIntervalSeconds = captureIntervalSeconds;
+    }
+
+    public void setCompressionQuality(Integer compressionQuality) {
+        this.compressionQuality = compressionQuality;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
     // Setters có thể cần nếu bạn muốn dùng DTO này cho việc cập nhật
     // public void setId(int id) { this.id = id; }
     // ...

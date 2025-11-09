@@ -27,8 +27,6 @@ public interface ClientRepository extends JpaRepository<ClientEntity, Integer> {
 
     // 2. Tìm client theo danh sách trạng thái (tối ưu hơn cho SUSPENDED và PING_SENT)
     List<ClientEntity> findByStatusIn(List<String> statuses);
-
-    // 3. Tìm client đang ACTIVE nhưng đã quá hạn ảnh (ACTIVE -> SUSPENDED)
    
     List<ClientEntity> findByStatusAndLastImageReceivedBefore(String status, Timestamp timeThreshold);
     @Query("SELECT c.user.username FROM ClientEntity c WHERE c.id = :clientId")

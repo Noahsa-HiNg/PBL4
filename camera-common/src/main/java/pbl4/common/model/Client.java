@@ -17,10 +17,10 @@ public class Client implements Serializable {
     private String MachineId;
     private String status;
     private Timestamp lastHeartbeat;
-    private int imageWidth;
-    private int imageHeight;
-    private int captureIntervalSeconds;
-    private int compressionQuality;
+    private Integer imageWidth;
+    private Integer imageHeight;
+    private Integer captureIntervalSeconds;
+    private Integer compressionQuality;
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
@@ -29,7 +29,7 @@ public class Client implements Serializable {
     }
 
     // Constructor đầy đủ tham số
-    public Client(int id,int userId, String clientName, String ipAddress,String MachineId, String status, Timestamp lastHeartbeat, int imageWidth, int imageHeight, int captureIntervalSeconds, int compressionQuality, Timestamp createdAt, Timestamp updatedAt) {
+    public Client(int id,int userId, String clientName, String ipAddress,String MachineId, String status, Timestamp lastHeartbeat, Integer imageWidth, Integer imageHeight, Integer captureIntervalSeconds, Integer compressionQuality, Timestamp createdAt, Timestamp updatedAt) {
         this.id = id;
         this.userId = userId;
         this.clientName = clientName;
@@ -100,7 +100,7 @@ public class Client implements Serializable {
         this.lastHeartbeat = lastHeartbeat;
     }
 
-    public int getImageWidth() {
+    public Integer getImageWidth() {
         return imageWidth;
     }
 
@@ -108,7 +108,7 @@ public class Client implements Serializable {
         this.imageWidth = imageWidth;
     }
 
-    public int getImageHeight() {
+    public Integer getImageHeight() {
         return imageHeight;
     }
 
@@ -116,7 +116,7 @@ public class Client implements Serializable {
         this.imageHeight = imageHeight;
     }
 
-    public int getCaptureIntervalSeconds() {
+    public Integer getCaptureIntervalSeconds() {
         return captureIntervalSeconds;
     }
 
@@ -124,7 +124,7 @@ public class Client implements Serializable {
         this.captureIntervalSeconds = captureIntervalSeconds;
     }
 
-    public int getCompressionQuality() {
+    public Integer getCompressionQuality() {
         return compressionQuality;
     }
 
