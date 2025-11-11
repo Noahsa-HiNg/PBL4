@@ -99,58 +99,58 @@ public class ClientController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
-        
-        // 1. XÁC THỰC VÀ LẤY USER ID
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Token is invalid."));
-        }
-
-        Long currentUserId = userService.getUserIdByUsername(username);
-
-        if (currentUserId == null) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found in context."));
-        }
-
-        try {
-            // 2. GỌI SERVICE CẬP NHẬT (Service đã kiểm tra quyền sở hữu)
-            Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
-            
-            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
-            
-            String ownerUsername = clientService.getUsernameByClientId(id); 
-
-            if (webSocketHandler != null && ownerUsername != null) {
-                
-                // Tạo JSON Payload (Gửi toàn bộ DTO Client đã cập nhật)
-                String dtoJson = objectMapper.writeValueAsString(updatedClient);
-                String jsonMessage = String.format(
-                    "{\"type\": \"CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
-                    id, dtoJson
-                );
-                
-                // GỬI TIN ĐẾN TẤT CẢ SESSIONS CỦA USER ĐÓ
-                webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
-            }
-            return ResponseEntity.ok(updatedClient);
-            
-        } catch (EntityNotFoundException e) {
-            // Bắt lỗi "Access Denied" hoặc "Not Found" từ Service
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-        } catch (JsonProcessingException e) {
-            // Bắt lỗi khi tạo JSON cho WebSocket
-            System.err.println("Client updated, but WebSocket notification failed: " + e.getMessage());
-            // Trả về thành công, vì Client đã được cập nhật
-            return ResponseEntity.ok(Map.of("message", "Client updated, but notification failed."));
-        } catch (Exception e) {
-            // Bắt các lỗi chung khác
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
-        }
-    }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<?> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
+//        
+//        // 1. XÁC THỰC VÀ LẤY USER ID
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String username = authentication.getName();
+//        
+//        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(username)) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Token is invalid."));
+//        }
+//
+//        Long currentUserId = userService.getUserIdByUsername(username);
+//
+//        if (currentUserId == null) {
+//             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found in context."));
+//        }
+//
+//        try {
+//            // 2. GỌI SERVICE CẬP NHẬT (Service đã kiểm tra quyền sở hữu)
+//            Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
+//            
+//            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
+//            
+//            String ownerUsername = clientService.getUsernameByClientId(id); 
+//
+//            if (webSocketHandler != null && ownerUsername != null) {
+//                
+//                // Tạo JSON Payload (Gửi toàn bộ DTO Client đã cập nhật)
+//                String dtoJson = objectMapper.writeValueAsString(updatedClient);
+//                String jsonMessage = String.format(
+//                    "{\"type\": \"CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
+//                    id, dtoJson
+//                );
+//                
+//                // GỬI TIN ĐẾN TẤT CẢ SESSIONS CỦA USER ĐÓ
+//                webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
+//            }
+//            return ResponseEntity.ok(updatedClient);
+//            
+//        } catch (EntityNotFoundException e) {
+//            // Bắt lỗi "Access Denied" hoặc "Not Found" từ Service
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+//        } catch (JsonProcessingException e) {
+//            // Bắt lỗi khi tạo JSON cho WebSocket
+//            System.err.println("Client updated, but WebSocket notification failed: " + e.getMessage());
+//            // Trả về thành công, vì Client đã được cập nhật
+//            return ResponseEntity.ok(Map.of("message", "Client updated, but notification failed."));
+//        } catch (Exception e) {
+//            // Bắt các lỗi chung khác
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
+//        }
+//    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable int id) {

@@ -133,4 +133,24 @@ public class CameraController {
             return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
         }
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteCamera(@PathVariable Integer id) {
+        try {
+        	System.out.println("kiem tra 1");
+            // 1. Gọi service để thực hiện logic (Sẽ tạo ở bước 4)
+            cameraService.deleteCamera(id);
+            
+            System.out.println("kiem tra 2");
+            
+            // 2. Trả về 200 OK (không cần nội dung)
+            return ResponseEntity.ok().build();
+            
+        } catch (ResourceNotFoundException e) {
+            // 3. Trả về 404 nếu không tìm thấy camera
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (Exception e) {
+            // 4. Trả về 500 nếu có lỗi server khác
+            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+        }
+    }
 }

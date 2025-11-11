@@ -96,6 +96,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/images/view/**").permitAll()
+        
                 // All other /api/** endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
                 // Any other request also requires authentication

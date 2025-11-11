@@ -39,7 +39,7 @@ public class CameraEntity implements Serializable {
     @Column(name = "created_at", updatable = false)
     private Timestamp createdAt;
 
-    @OneToMany(mappedBy = "camera", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "camera", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<ImageEntity> images;
     // --- Getters and Setters ---
     public int getId() { return id; }

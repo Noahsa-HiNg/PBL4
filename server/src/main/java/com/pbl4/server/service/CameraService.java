@@ -239,7 +239,7 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         dto.setIpAddress(entity.getIpAddress());
         dto.setUsername(entity.getUsername());
         // QUAN TRỌNG: Không bao giờ gửi mật khẩu về client
-        dto.setPassword(null); // hoặc một chuỗi "*****"
+        dto.setPassword(entity.getPassword()); // hoặc một chuỗi "*****"
         dto.setUrl(entity.getOnvifUrl());
         // ...
         return dto;
@@ -252,6 +252,38 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
     public static class ResourceNotFoundException extends RuntimeException {
         public ResourceNotFoundException(String message) {
             super(message);
+        }
+    }
+    @Transactional
+    public void deleteCamera(Integer id) throws Exception {
+        CameraEntity camera = cameraRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy camera với ID: " + id));
+
+        String username = null;
+        if (camera.getClient() != null && camera.getClient().getUser() != null) {
+            username = camera.getClient().getUser().getUsername();
+        }
+
+        // Xóa các ảnh liên quan trước (nếu có)
+//        imageRepository.deleteByCameraId(id);
+
+        // Chỉ gọi MỘT lần delete
+        cameraRepository.delete(camera);
+
+        System.out.println(">>> Đã xóa camera ID: " + id);
+
+        // Gửi WebSocket sau khi commit (hoặc trong finally)
+        if (username != null) {
+            try {
+                Map<String, Object> msg = Map.of(
+                    "type", "CAMERA_DELETED",
+                    "id", id
+                );
+                String json = objectMapper.writeValueAsString(msg);
+                webSocketHandler.sendMessageToUser(username, json);
+            } catch (Exception e) {
+                System.err.println("WebSocket lỗi: " + e.getMessage());
+            }
         }
     }
 }

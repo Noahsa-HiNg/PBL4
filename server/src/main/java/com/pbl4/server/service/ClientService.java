@@ -185,32 +185,32 @@ public class ClientService {
         return clientRepository.findUsernameByClientId(clientId)
                                .orElse(null); // Trả về null nếu không tìm thấy
     }
-    public Client updateClient(int id,Client clientDto,Long currentUserId) {
-    	ClientEntity existingEntity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
-    	if (existingEntity == null) {
-            // Ném ra lỗi. Controller sẽ bắt lỗi này và trả về 404 hoặc 403
-            throw new EntityNotFoundException("Access Denied: Client not found with id: " + id + " or user " + currentUserId + " does not own it.");
-        }
-    	if (clientDto.getClientName()!=null) {
-    		existingEntity.setClientName(clientDto.getClientName());
-    	}
-    	if (clientDto.getImageHeight()!=null) {
-    		existingEntity.setImageHeight(clientDto.getImageHeight());
-    	}
-    	if (clientDto.getImageWidth()!=null) {
-    		existingEntity.setImageWidth(clientDto.getImageWidth());
-    	}
-    	
-        if (clientDto.getCompressionQuality() != null) {
-            existingEntity.setCompressionQuality(clientDto.getCompressionQuality());
-        }
-        if (clientDto.getCaptureIntervalSeconds() != null) {
-            existingEntity.setCaptureIntervalSeconds(clientDto.getCaptureIntervalSeconds());
-        }
-        ClientEntity updatedEntity = clientRepository.save(existingEntity);
-    	
-    	return toDto(updatedEntity);            
-    }
+//    public Client updateClient(int id,Client clientDto,Long currentUserId) {
+//    	ClientEntity existingEntity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
+//    	if (existingEntity == null) {
+//            // Ném ra lỗi. Controller sẽ bắt lỗi này và trả về 404 hoặc 403
+//            throw new EntityNotFoundException("Access Denied: Client not found with id: " + id + " or user " + currentUserId + " does not own it.");
+//        }
+//    	if (clientDto.getClientName()!=null) {
+//    		existingEntity.setClientName(clientDto.getClientName());
+//    	}
+//    	if (clientDto.getImageHeight()!=null) {
+//    		existingEntity.setImageHeight(clientDto.getImageHeight());
+//    	}
+//    	if (clientDto.getImageWidth()!=null) {
+//    		existingEntity.setImageWidth(clientDto.getImageWidth());
+//    	}
+//    	
+//        if (clientDto.getCompressionQuality() != null) {
+//            existingEntity.setCompressionQuality(clientDto.getCompressionQuality());
+//        }
+//        if (clientDto.getCaptureIntervalSeconds() != null) {
+//            existingEntity.setCaptureIntervalSeconds(clientDto.getCaptureIntervalSeconds());
+//        }
+//        ClientEntity updatedEntity = clientRepository.save(existingEntity);
+//    	
+//    	return toDto(updatedEntity);            
+//    }
     
     // --- Helper Methods for Mapping ---
     private Client toDto(ClientEntity entity) {
