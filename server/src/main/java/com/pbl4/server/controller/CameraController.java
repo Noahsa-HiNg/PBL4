@@ -133,24 +133,44 @@ public class CameraController {
             return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
         }
     }
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<?> deleteCamera(@PathVariable Integer id) {
+//        try {
+//        	System.out.println("kiem tra 1");
+//            // 1. Gọi service để thực hiện logic (Sẽ tạo ở bước 4)
+//            cameraService.deleteCamera(id);
+//            
+//            System.out.println("kiem tra 2");
+//            
+//            // 2. Trả về 200 OK (không cần nội dung)
+//            return ResponseEntity.ok().build();
+//            
+//        } catch (ResourceNotFoundException e) {
+//            // 3. Trả về 404 nếu không tìm thấy camera
+//            return ResponseEntity.status(404).body(e.getMessage());
+//        } catch (Exception e) {
+//            // 4. Trả về 500 nếu có lỗi server khác
+//            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+//        }
+//    }
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCamera(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteCamera(@PathVariable int id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        Long currentUserId = userService.getUserIdByUsername(username);
+
+        if (currentUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated."));
+        }
+
         try {
-        	System.out.println("kiem tra 1");
-            // 1. Gọi service để thực hiện logic (Sẽ tạo ở bước 4)
-            cameraService.deleteCamera(id);
+            cameraService.deleteCamera(id, currentUserId);
+            return ResponseEntity.noContent().build();
             
-            System.out.println("kiem tra 2");
-            
-            // 2. Trả về 200 OK (không cần nội dung)
-            return ResponseEntity.ok().build();
-            
-        } catch (ResourceNotFoundException e) {
-            // 3. Trả về 404 nếu không tìm thấy camera
-            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            // 4. Trả về 500 nếu có lỗi server khác
-            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error deleting camera: " + e.getMessage()));
         }
     }
 }

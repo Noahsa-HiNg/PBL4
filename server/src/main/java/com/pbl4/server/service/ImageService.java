@@ -13,6 +13,7 @@ import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ th�
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page; // Cho phân trang
 import org.springframework.data.domain.Pageable; // Cho phân trang
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ import java.math.BigDecimal;
 // import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ImageService {
 
     private final Path fileStorageLocation;
@@ -48,10 +50,7 @@ public class ImageService {
     private final CameraRepository cameraRepository;
     private final ClientRepository clientRepository;
     private final UserRepository  userRepository;
-    @Autowired
-    private MyWebSocketHandler webSocketHandler; // 1. Inject Handler
-
-    @Autowired
+    private MyWebSocketHandler webSocketHandler; 
     private ObjectMapper objectMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
@@ -63,7 +62,7 @@ public class ImageService {
         this.cameraRepository = cameraRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
-        
+       
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
             Files.createDirectories(this.fileStorageLocation);
@@ -308,6 +307,25 @@ public class ImageService {
         }
 
         imageRepository.deleteAllInBatch(imagesToDelete);
+    }
+    public void deleteAllImagesForCamera(int cameraId) throws IOException {
+        List<ImageEntity> images = imageRepository.findByCameraId(cameraId);
+        for (ImageEntity image : images) {
+            deleteImageFile(image.getRelativePath());
+        }
+        imageRepository.deleteAllByCameraId(cameraId);
+    }
+    private void deleteImageFile(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return; 
+        }
+        
+        try {
+            Path filePath = this.fileStorageLocation.resolve(relativePath).normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            System.err.println("Không thể xóa file: " + relativePath + ". Lỗi: " + e.getMessage());
+        }
     }
     
 }

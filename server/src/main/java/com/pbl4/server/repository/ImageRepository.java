@@ -1,10 +1,15 @@
 package com.pbl4.server.repository;
 
 import com.pbl4.server.entity.ImageEntity;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page; // Thêm import
@@ -30,4 +35,9 @@ public interface ImageRepository extends JpaRepository<ImageEntity, Long> {
             Pageable pageable
     );
 	Optional<ImageEntity> findFirstByCameraIdOrderByCapturedAtDesc(int cameraId);
+	List<ImageEntity> findByCameraId(int cameraId);
+	@Modifying
+    @Transactional
+    void deleteAllByCameraId(int cameraId);
+	
 }

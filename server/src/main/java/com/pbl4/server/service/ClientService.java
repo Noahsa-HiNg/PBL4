@@ -4,6 +4,7 @@ import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.dto.ClientDTO;
 import com.pbl4.server.dto.ClientRegisterRequest;
 import com.pbl4.server.dto.ClientRegisterResponse;
+import com.pbl4.server.entity.CameraEntity;
 import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.CameraRepository;
@@ -16,6 +17,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Client; // DTO
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -26,18 +28,20 @@ import com.pbl4.server.repository.UserRepository;@Service
 public class ClientService {
 	
     private final ClientRepository clientRepository;
-
+    private final ImageService imageService;
     private final UserRepository userRepository;
     private final CameraRepository cameraRepository;
     private static final long SECONDS_IN_DAY = 86400;
     private static final long MAX_PING_INTERVAL_SECONDS = 90000; // 1 ngày + 1 giờ
     private static final long MIN_PING_INTERVAL_SECONDS = 30;
-    public ClientService(ClientRepository clientRepository, UserRepository userRepository,CameraRepository cameraRepository) {
+    public ClientService(ClientRepository clientRepository, UserRepository userRepository,CameraRepository cameraRepository,ImageService imageService) {
 
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.cameraRepository = cameraRepository;
+        this.imageService = imageService;
     }
+    
     public ClientRegisterResponse registerOrGetClient(ClientRegisterRequest request, String username, String remoteIpAddress) {
 
         // 1. Tìm UserEntity dựa vào username từ token (đảm bảo user tồn tại)
@@ -174,43 +178,43 @@ public class ClientService {
 //        return toDto(updatedEntity);
 //    }
 //
-    public void deleteClient(int id) {
-        if (!clientRepository.existsById(id)) {
-            throw new RuntimeException("Client not found with id: " + id);
-        }
-        clientRepository.deleteById(id);
-    }
+//    public void deleteClient(int id) {
+//        if (!clientRepository.existsById(id)) {
+//            throw new RuntimeException("Client not found with id: " + id);
+//        }
+//        clientRepository.deleteById(id);
+//    }
 
     public String getUsernameByClientId(int clientId) {
         return clientRepository.findUsernameByClientId(clientId)
                                .orElse(null); // Trả về null nếu không tìm thấy
     }
-//    public Client updateClient(int id,Client clientDto,Long currentUserId) {
-//    	ClientEntity existingEntity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
-//    	if (existingEntity == null) {
-//            // Ném ra lỗi. Controller sẽ bắt lỗi này và trả về 404 hoặc 403
-//            throw new EntityNotFoundException("Access Denied: Client not found with id: " + id + " or user " + currentUserId + " does not own it.");
-//        }
-//    	if (clientDto.getClientName()!=null) {
-//    		existingEntity.setClientName(clientDto.getClientName());
-//    	}
-//    	if (clientDto.getImageHeight()!=null) {
-//    		existingEntity.setImageHeight(clientDto.getImageHeight());
-//    	}
-//    	if (clientDto.getImageWidth()!=null) {
-//    		existingEntity.setImageWidth(clientDto.getImageWidth());
-//    	}
-//    	
-//        if (clientDto.getCompressionQuality() != null) {
-//            existingEntity.setCompressionQuality(clientDto.getCompressionQuality());
-//        }
-//        if (clientDto.getCaptureIntervalSeconds() != null) {
-//            existingEntity.setCaptureIntervalSeconds(clientDto.getCaptureIntervalSeconds());
-//        }
-//        ClientEntity updatedEntity = clientRepository.save(existingEntity);
-//    	
-//    	return toDto(updatedEntity);            
-//    }
+  public Client updateClient(int id,Client clientDto,Long currentUserId) {
+	ClientEntity existingEntity = clientRepository.findByIdAndUserId(id, currentUserId.intValue());
+			if (existingEntity == null) {
+		        
+		        throw new EntityNotFoundException("Access Denied: Client not found with id: " + id + " or user " + currentUserId + " does not own it.");
+		    }
+			if (clientDto.getClientName()!=null) {
+				existingEntity.setClientName(clientDto.getClientName());
+			}
+			if (clientDto.getImageHeight()!=null) {
+				existingEntity.setImageHeight(clientDto.getImageHeight());
+			}
+			if (clientDto.getImageWidth()!=null) {
+				existingEntity.setImageWidth(clientDto.getImageWidth());
+			}
+			
+		    if (clientDto.getCompressionQuality() != null) {
+		        existingEntity.setCompressionQuality(clientDto.getCompressionQuality());
+		    }
+		    if (clientDto.getCaptureIntervalSeconds() != null) {
+		        existingEntity.setCaptureIntervalSeconds(clientDto.getCaptureIntervalSeconds());
+		    }
+		    ClientEntity updatedEntity = clientRepository.save(existingEntity);
+	
+	return toDto(updatedEntity);            
+}
     
     // --- Helper Methods for Mapping ---
     private Client toDto(ClientEntity entity) {
@@ -282,6 +286,25 @@ public class ClientService {
     }
     public int checkStatus(int clientId) {
     	return clientRepository.findStatusById(clientId);
+    }
+    public void deleteClient(int clientId, Long currentUserId) throws IOException {
+        
+    	ClientEntity client = clientRepository.findByIdAndUserId(clientId, currentUserId.intValue());
+
+    	if (client == null) {
+    	    throw new EntityNotFoundException("Access Denied: Client not found or not owned by user.");
+    	}
+
+        // 2. Lấy danh sách Camera sắp bị xóa
+        List<CameraEntity> camerasToDelete = cameraRepository.findByClientId(clientId);
+
+        // 3. [BẮT BUỘC VÌ KHÔNG CÓ CASCADE]
+        // Xóa thủ công TẤT CẢ ẢNH (File vật lý + Metadata)
+        for (CameraEntity camera : camerasToDelete) {
+            // Gọi ImageService để dọn dẹp ảnh
+            imageService.deleteAllImagesForCamera(camera.getId());
+        }
+        clientRepository.delete(client);
     }
     
 }

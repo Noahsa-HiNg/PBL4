@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Camera; // DTO
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
@@ -30,11 +31,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class CameraService {
 
     private final CameraRepository cameraRepository;
     private final ClientRepository clientRepository; 
-    private final UserRepository userRepository;// Cần để tìm Client
+    private final UserRepository userRepository;
+    
+    private final ImageService imageService;
     @Autowired
     private ImageRepository imageRepository;
     
@@ -45,10 +49,11 @@ public class CameraService {
     @Autowired
     private ObjectMapper objectMapper; // Chuyển đổi JSON
 
-    public CameraService(CameraRepository cameraRepository,UserRepository userRepository, ClientRepository clientRepository) {
+    public CameraService(CameraRepository cameraRepository,UserRepository userRepository, ClientRepository clientRepository,ImageService imageService) {
         this.cameraRepository = cameraRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
+        this.imageService = imageService;
     }
     
     public Camera createCamera(Camera cameraDto) {
@@ -96,8 +101,6 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         if (entity.getClient() != null) {
             dto.setClientId(entity.getClient().getId());
         }
-        
-        // ... sao chép các trường khác
         return dto;
     }
     
@@ -144,9 +147,6 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         if (!client.getUser().equals(user)) {
             throw new SecurityException("User " + authUsername + " không sở hữu Client " + request.getClientId());
         }
-
-        // 2. Kiểm tra Xung đột: Camera (vật lý) đã tồn tại chưa?
-        // Kiểm tra xem (IP + Username) đã tồn tại ở BẤT KỲ đâu trong bảng Cameras chưa
         Optional<CameraEntity> existingPhysicalCamera = cameraRepository.findByIpAddressAndUsername(
             request.getIpAddress(), request.getUsername()
         );
@@ -183,17 +183,11 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         // 1. Tìm Camera cũ trong Database (Sử dụng JpaRepository)
         CameraEntity existingCamera = cameraRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy camera với ID: " + id));
-
-        // 2. Cập nhật thông tin từ DTO vào Entity
-        // (Giả sử CameraEntity có các setter này)
         existingCamera.setCameraName(cameraDTO.getCameraName());
         existingCamera.setIpAddress(cameraDTO.getIpAddress());
         existingCamera.setUsername(cameraDTO.getUsername());
         existingCamera.setPassword(cameraDTO.getPassword());
         existingCamera.setOnvifUrl(cameraDTO.getOnvifUrl());
-        // ... (Cập nhật các trường khác nếu có)
-
-        // 3. Lưu lại vào Database (Sử dụng JpaRepository)
         CameraEntity savedCamera = cameraRepository.save(existingCamera);
 
         // 4. GỬI THÔNG BÁO WEBSOCKET
@@ -226,12 +220,6 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         return convertToDto(savedCamera);
     }
     
-    // --- Các hàm tiện ích ---
-
-    /**
-     * Hàm tiện ích để chuyển đổi Entity sang DTO
-     * (Cần đảm bảo CameraDTO có đủ setter)
-     */
     private CameraDTO convertToDto(CameraEntity entity) {
         CameraDTO dto = new CameraDTO();
         dto.setId(entity.getId());
@@ -254,37 +242,46 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
             super(message);
         }
     }
-    @Transactional
-    public void deleteCamera(Integer id) throws Exception {
-        CameraEntity camera = cameraRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy camera với ID: " + id));
-
-        String username = null;
-        if (camera.getClient() != null && camera.getClient().getUser() != null) {
-            username = camera.getClient().getUser().getUsername();
-        }
-
-        // Xóa các ảnh liên quan trước (nếu có)
-//        imageRepository.deleteByCameraId(id);
-
-        // Chỉ gọi MỘT lần delete
-        cameraRepository.delete(camera);
-
-        System.out.println(">>> Đã xóa camera ID: " + id);
-
-        // Gửi WebSocket sau khi commit (hoặc trong finally)
-        if (username != null) {
-            try {
-                Map<String, Object> msg = Map.of(
-                    "type", "CAMERA_DELETED",
-                    "id", id
-                );
-                String json = objectMapper.writeValueAsString(msg);
-                webSocketHandler.sendMessageToUser(username, json);
-            } catch (Exception e) {
-                System.err.println("WebSocket lỗi: " + e.getMessage());
-            }
-        }
-    }
+//    @Transactional
+//    public void deleteCamera(Integer id) throws Exception {
+//        CameraEntity camera = cameraRepository.findById(id)
+//            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy camera với ID: " + id));
+//
+//        String username = null;
+//        if (camera.getClient() != null && camera.getClient().getUser() != null) {
+//            username = camera.getClient().getUser().getUsername();
+//        }
+//
+//        // Xóa các ảnh liên quan trước (nếu có)
+////        imageRepository.deleteByCameraId(id);
+//        cameraRepository.delete(camera);
+//
+//        System.out.println(">>> Đã xóa camera ID: " + id);
+//        if (username != null) {
+//            try {
+//                Map<String, Object> msg = Map.of(
+//                    "type", "CAMERA_DELETED",
+//                    "id", id
+//                );
+//                String json = objectMapper.writeValueAsString(msg);
+//                webSocketHandler.sendMessageToUser(username, json);
+//            } catch (Exception e) {
+//                System.err.println("WebSocket lỗi: " + e.getMessage());
+//            }
+//        }
+//    }
+	public void deleteCamera(int cameraId, Long currentUserId) throws IOException {
+	        
+	        // 1. Kiểm tra quyền sở hữu (Tìm camera theo ID và ID chủ sở hữu)
+	        CameraEntity camera = cameraRepository.findByIdAndClientUserId(cameraId, currentUserId.intValue())
+	                .orElseThrow(() -> new EntityNotFoundException("Access Denied: Camera not found or not owned by user."));
+	
+	        // 2. Xóa tất cả ảnh liên quan (gọi ImageService)
+	        // (Bước này sẽ xóa cả file và metadata)
+	        imageService.deleteAllImagesForCamera(cameraId);
+	            
+	        // 3. Xóa Camera (chỉ khi xóa ảnh thành công)
+	        cameraRepository.delete(camera);
+	    }
 }
     

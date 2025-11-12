@@ -1,7 +1,7 @@
-// const API_BASE_URL = 'http://localhost:8080/api';
- const API_BASE_URL = 'http://192.168.12.106:8080/api';
+const API_BASE_URL = 'http://localhost:8080/api';
+// const API_BASE_URL = 'http://192.168.12.106:8080/api';
 // //const API_BASE_URL = 'http://127.0.0.1:5500';
-const WS_URL = 'ws://192.168.12.106:8080/ws/updates';
+const WS_URL = 'ws://192.168.110.236.:8080/ws/updates';
 //const API_BASE_URL = `http://${window.location.host}/api`;
 //const WS_URL = `ws://${window.location.host}/ws/updates`;
 
