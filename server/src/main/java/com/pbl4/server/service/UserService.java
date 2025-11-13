@@ -43,7 +43,6 @@ public class UserService {
     }
 
     public UserEntity findByUsername(String username) {
-        // Giả định userRepository là dependency đã được tiêm
         return userRepository.findByUsername(username).orElse(null);
     }
     // READ All
@@ -57,13 +56,12 @@ public class UserService {
         return toDto(userEntity);
     }
 
-public User updateUser(int id, User userDto, Long currentUserId) {
+public User updateUser(int id, User userDto, Long currentUserId,String currentUserRole) {
         
-        // --- 1. KIỂM TRA BẢO MẬT (NGHIÊM NGẶT) ---
-        // User chỉ được cập nhật tài khoản của chính mình (ID từ URL phải khớp với ID từ Token)
-        if (id != currentUserId.intValue()) {
+	 // Hoặc kiểm tra: if (role != ADMIN) throw...
+        if ((id != currentUserId.intValue())&&(!currentUserRole.equals("ADMIN"))) {
             throw new SecurityException("Access Denied: Cannot update another user's profile.");
-            // Hoặc kiểm tra: if (role != ADMIN) throw...
+           
         }
         
         // 2. TÌM KIẾM ENTITY
@@ -80,13 +78,11 @@ public User updateUser(int id, User userDto, Long currentUserId) {
         // Bảo mật: CHỈ ĐƯỢC PHÉP CẬP NHẬT ROLE BỞI ADMIN HOẶC NẾU CẦN
         // Nếu Frontend KHÔNG gửi role, không ghi đè giá trị này.
         // XÓA DÒNG NÀY: existingUser.setRole(userDto.getRole());
-        
-        // Thêm logic cập nhật mật khẩu nếu cần:
+
         if (userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty()) {
              existingUser.setPasswordHash(passwordEncoder.encode(userDto.getPassword()));
         }
-        
-        // 4. LƯU VÀ TRẢ VỀ
+
         UserEntity updatedUser = userRepository.save(existingUser);
         return toDto(updatedUser);
     }
@@ -113,38 +109,25 @@ public User updateUser(int id, User userDto, Long currentUserId) {
 	
 	public Long getUserIdByUsername(String username) {
 	    
-	    // 1. Repository trả về Optional<UserEntity>
 	    Optional<UserEntity> userOptional = userRepository.findByUsername(username); 
-	    
-	    // 2. Kiểm tra và trích xuất dữ liệu một cách an toàn
 	    if (userOptional.isPresent()) {
 	        // Lấy UserEntity từ Optional
 	        UserEntity user = userOptional.get(); 
-	        
-	        // Trả về ID (chuyển đổi int -> Long)
+
 	        return (long) user.getId();
 	    }
-	    
-	    // 3. Nếu không tìm thấy, trả về null
+
 	    return null; 
 	}
-	/**
-     * [BỔ SUNG MỚI] Lấy danh sách Users khớp với từ khóa tìm kiếm.
-     * @param keyword Từ khóa tìm kiếm (có thể là tên, email, hoặc ID).
-     * @return Danh sách User DTO.
-     */
     public List<User> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return Collections.emptyList(); // Trả về danh sách trống nếu không có từ khóa
+            return Collections.emptyList(); 
         }
-        
-        // Loại bỏ khoảng trắng và chuyển thành dạng truy vấn
+
         String searchKeyword = keyword.trim();
-        
-        // Gọi phương thức Repository đã tạo truy vấn phức tạp
+
         List<UserEntity> entities = userRepository.searchByKeyword(searchKeyword);
-        
-        // Chuyển đổi sang DTO và trả về
+
         return entities.stream()
                        .map(this::toDto)
                        .collect(Collectors.toList());

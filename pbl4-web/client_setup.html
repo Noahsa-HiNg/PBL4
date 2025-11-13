@@ -22,6 +22,15 @@
             border-radius: var(--border-radius-main);
             width: 90%; max-width: 600px;
         }
+        .btn-delete {
+        background-color: var(--color-status-danger);
+        color: white;
+        border: none;
+        margin-left: 5px; 
+        }
+        .btn-delete:hover {
+        background-color: #c82333;
+        }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     </style>
 </head>
@@ -43,7 +52,8 @@
                     <th>Trạng thái</th>
                     <th>Cấu hình (WxH @ Q)</th>
                     <th>Khoảng nghỉ</th>
-                    <th>Quản lý Camera</th> <th>Cấu hình</th>
+                    <th>Quản lý Camera</th> <th>Hoạt động</th>
+                   
                 </tr>
             </thead>
             <tbody>
@@ -81,7 +91,7 @@
                         <input type="number" id="quality" class="form-control" min="1" max="100">
                     </div>
                 </div>
-
+                 
                 <button type="submit" class="btn btn-primary">Lưu Cấu hình</button>
                 <button type="button" class="btn btn-secondary" id="close-modal-btn">Hủy</button>
             </form>
@@ -124,6 +134,9 @@
                             <td>
                                 <button class="btn btn-primary btn-sm" onclick="openEditModal(${client.id})">
                                     Cấu hình
+                                </button>
+                                <button class="btn btn-delete btn-sm" onclick="handleDeleteClient(${client.id}, '${client.clientName}')">
+                                    Xóa
                                 </button>
                             </td>
                         </tr>
@@ -181,6 +194,22 @@
                 alert("Lỗi lưu: " + error.message);
             }
         });
+        async function handleDeleteClient(clientId, clientName) {
+        if (!confirm(`Bạn có chắc chắn muốn xóa Client "${clientName}" (ID: ${clientId}) không? \n\nCẢNH BÁO: Hành động này sẽ xóa TẤT CẢ Camera và TẤT CẢ Ảnh liên quan đến Client này.`)) {
+        return; // Hủy nếu người dùng không xác nhận
+        }
+        
+        try {
+        await deleteClient(clientId); 
+        
+        alert(`Đã xóa Client "${clientName}" thành công.`);
+        loadClients(); // Tải lại bảng
+        
+        } catch (error) {
+        console.error('Lỗi khi xóa Client:', error);
+        alert(`Xóa thất bại: ${error.message}`);
+        }
+    }
     </script>
 </body>
 </html>

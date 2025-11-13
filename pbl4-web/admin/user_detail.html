@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết Người dùng</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .container { display: flex; max-width: 1400px; margin: 20px auto; gap: 20px; }
+        .user-info-panel { text-align: center; padding: 20px; background: var(--color-background-surface); border-radius: 8px; margin-bottom: 20px; }
+        .user-info-panel h1 { margin: 0; }
+        .user-info-panel p { color: var(--color-text-secondary); }
+
+        .client-list-panel { flex: 1; min-width: 300px; }
+        .camera-list-panel { flex: 3; }
+
+        .list-header { font-size: 1.2rem; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid var(--color-primary); }
+        .list-item { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; transition: background-color 0.2s; }
+        .list-item:hover, .list-item.active { background-color: #f0f0f0; }
+        .list-item strong { display: block; font-size: 1.1rem; }
+        .list-item span { font-size: 0.9rem; color: #555; }
+        
+        .camera-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .camera-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .camera-card .stats { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="../live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="admin_dashboard.html">Thống kê</a>
+            <a href="user_management.html" >Quản lý người dùng</a>
+            <a href="admin_setting.html">Cài đặt Cá nhân</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="user-info-panel" id="user-info">
+            <h1 id="user-name-header">Đang tải...</h1>
+            <p id="user-email-role"></p>
+        </div>
+
+        <div class="container">
+            <div class="client-list-panel">
+                <h2 class="list-header">Danh sách Clients</h2>
+                <div id="client-list">
+                    <p>Đang tải danh sách Client...</p>
+                </div>
+            </div>
+
+            <div class="camera-list-panel">
+                <h2 class="list-header" id="camera-header">Chọn một Client</h2>
+                <div id="camera-list">
+                    </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script>
+        // === KHAI BÁO CÁC HÀM API MỚI (Cần cho trang này) ===
+        // (Bạn có thể chuyển các hàm này vào api.js nếu muốn)
+        
+        /**
+         * [API MỚI] Lấy danh sách Clients cho một User ID cụ thể (Admin).
+         */
+        async function getClientsForUser(userId) {
+            const url = `${API_BASE_URL}/admin/users/${userId}/clients`;
+            console.log(`Gọi API lấy Clients cho User ${userId}:`, url);
+            try {
+                const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+                if (!response.ok) await handleResponseError(response);
+                return await response.json();
+            } catch (error) {
+                handleApiError(error, `getClientsForUser(${userId})`);
+            }
+        }
+
+        /**
+         * [API MỚI] Lấy thống kê (số ảnh) cho một Camera ID.
+         */
+        async function getCameraStats(cameraId) {
+            const url = `${API_BASE_URL}/admin/cameras/${cameraId}/stats`;
+            try {
+                const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+                if (!response.ok) return { totalImages: '?' }; // Trả về '?' nếu lỗi
+                return await response.json();
+            } catch (error) {
+                console.error(`Lỗi lấy stats cho Camera ${cameraId}:`, error);
+                return { totalImages: '?' };
+            }
+        }
+
+        // === LOGIC CỦA TRANG ===
+        
+        const clientListDiv = document.getElementById('client-list');
+        const cameraListDiv = document.getElementById('camera-list');
+        const cameraHeader = document.getElementById('camera-header');
+
+        // 1. Tải dữ liệu chính khi trang mở
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('id');
+
+            if (!userId) {
+                document.getElementById('user-name-header').textContent = "Lỗi: Không tìm thấy User ID.";
+                return;
+            }
+
+            // Tải song song thông tin User và danh sách Client của họ
+            await Promise.all([
+                loadUserDetail(userId),
+                loadClientsForUser(userId)
+            ]);
+        });
+
+        // 2. Tải thông tin cơ bản của User
+        async function loadUserDetail(userId) {
+            try {
+                const user = await getUserById(userId); // Dùng hàm từ api.js
+                document.getElementById('user-name-header').textContent = user.username;
+                document.getElementById('user-email-role').textContent = `${user.email} | Vai trò: ${user.role}`;
+            } catch (error) {
+                document.getElementById('user-name-header').textContent = "Lỗi tải User";
+            }
+        }
+
+        // 3. Tải danh sách Client của User
+        async function loadClientsForUser(userId) {
+            clientListDiv.innerHTML = '<p>Đang tải Clients...</p>';
+            try {
+                const clients = await getClientsForUser(userId);
+                clientListDiv.innerHTML = ''; // Xóa "Đang tải"
+
+                if (clients.length === 0) {
+                    clientListDiv.innerHTML = '<p>User này không sở hữu Client nào.</p>';
+                    return;
+                }
+
+                clients.forEach(client => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.dataset.clientId = client.id;
+                    item.dataset.clientName = client.clientName;
+                    item.innerHTML = `
+                        <strong>${client.clientName} (ID: ${client.id})</strong>
+                        <span>Trạng thái: ${client.status} | IP: ${client.ipAddress || 'N/A'}</span>
+                    `;
+                    // Gắn sự kiện click
+                    item.addEventListener('click', () => {
+                        // Highlight item được chọn
+                        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        // Tải camera
+                        onClientClick(client.id, client.clientName);
+                    });
+                    clientListDiv.appendChild(item);
+                });
+            } catch (error) {
+                clientListDiv.innerHTML = `<p style="color:red;">Lỗi tải Clients: ${error.message}</p>`;
+            }
+        }
+
+        // 4. Khi nhấn vào một Client -> Tải Camera
+        function onClientClick(clientId, clientName) {
+            cameraHeader.textContent = `Cameras thuộc Client: ${clientName}`;
+            loadCamerasAndStats(clientId);
+        }
+
+        // 5. Tải Camera VÀ Thống kê ảnh
+        async function loadCamerasAndStats(clientId) {
+            cameraListDiv.innerHTML = '<p>Đang tải Cameras và Thống kê...</p>';
+            try {
+                // Lấy danh sách Camera
+                const cameras = await getCameraListByClient(clientId); // Dùng hàm từ api.js
+                
+                if (cameras.length === 0) {
+                    cameraListDiv.innerHTML = '<p>Client này không có Camera nào.</p>';
+                    return;
+                }
+
+                // Tải thống kê cho tất cả camera cùng lúc (Promise.all)
+                const statsPromises = cameras.map(camera => getCameraStats(camera.id));
+                const statsResults = await Promise.all(statsPromises);
+
+                cameraListDiv.innerHTML = ''; // Xóa "Đang tải"
+
+                cameras.forEach((camera, index) => {
+                    const stats = statsResults[index];
+                    const card = document.createElement('div');
+                    card.className = 'camera-card';
+                    card.innerHTML = `
+                        <div class="camera-card-header">
+                            <h4>${camera.cameraName} (ID: ${camera.id})</h4>
+                            <span class="stats">Số ảnh: ${stats.totalImages}</span>
+                        </div>
+                        <p>IP: ${camera.ipAddress} | Trạng thái: ${camera.isActive ? 'Active' : 'Inactive'}</p>
+                    `;
+                    cameraListDiv.appendChild(card);
+                });
+
+            } catch (error) {
+                cameraListDiv.innerHTML = `<p style="color:red;">Lỗi tải Cameras: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

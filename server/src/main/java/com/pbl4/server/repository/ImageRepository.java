@@ -39,5 +39,7 @@ public interface ImageRepository extends JpaRepository<ImageEntity, Long> {
 	@Modifying
     @Transactional
     void deleteAllByCameraId(int cameraId);
+	long countByCameraClientUserId(int userId);
+	long countByCameraId(int cameraId);
 	
 }

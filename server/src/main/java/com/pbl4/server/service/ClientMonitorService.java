@@ -122,7 +122,7 @@ public class ClientMonitorService {
                     clientRepository.save(client);
                     
                     connectionPinger.sendPing(client.getIpAddress(), client.getId()); 
-                    System.out.println("Client ID " + client.getId() + " PING SENT. Ngưỡng: " + pingIntervalSeconds + "s.");
+                    //System.out.println("Client ID " + client.getId() + " PING SENT. Ngưỡng: " + pingIntervalSeconds + "s.");
                 }
             }
         }

@@ -19,14 +19,8 @@ import java.util.Collections;
 @Component
 public class MyWebSocketHandler extends TextWebSocketHandler {
 
-    // SỬA LẠI MAPS:
-    // Map này lưu các session đã được xác thực
-    // Key: username, Value: Session
-    //private final Map<String, WebSocketSession> sessionsByUsername = new ConcurrentHashMap<>();
-	private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
     
-    // Map này giúp tra cứu ngược để dọn dẹp khi client ngắt kết nối
-    // Key: sessionId, Value: username
+	private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
     private final Map<String, String> userBySessionId = new ConcurrentHashMap<>();
     @Autowired
     private ClientService clientService;
@@ -66,16 +60,12 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // Đây là nơi xử lý tin nhắn TỪ CLIENT GỬI LÊN
         String payload = message.getPayload();
         
         try {
             // 1. Đọc tin nhắn JSON
             Map<String, String> msg = objectMapper.readValue(payload, Map.class);
             String type = msg.get("type");
-
-            // 2. Xử lý tin nhắn "AUTH"
-            // Client phải gửi tin này ngay sau khi kết nối
             if ("AUTH".equals(type)) {
                 
                 // Nếu session này đã xác thực rồi thì bỏ qua
@@ -121,8 +111,6 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             System.out.println("WebSocket: Không tìm thấy session nào đang hoạt động cho user: " + username);
             return;
         }
-
-        // 2. Lặp qua từng session và gửi
         for (WebSocketSession session : userSessions) {
             if (session.isOpen()) {
                 try {
@@ -134,13 +122,25 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
-//    public void sendMessageToUserByClientId(int clientId, String jsonMessage) {
-//        // 1. Tìm username của User sở hữu Client này (Cần thêm hàm này vào ClientService)
-//        String username = clientService.getUsernameByClientId(clientId); 
-//        
-//        if (username != null) {
-//            // 2. Gửi tin nhắn xuống session của User đó
-//            sendMessageToUser(username, jsonMessage); 
-//        }
-//    }
+    public void sendMessageToUserByClientId(int clientId, String jsonMessage) {
+        String username = clientService.getUsernameByClientId(clientId); 
+        
+        if (username != null) {
+            sendMessageToUser(username, jsonMessage); 
+        }
+    }
+    public boolean isUserConnected(String username) {
+        Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
+
+        if (userSessions == null || userSessions.isEmpty()) {
+            return false; 
+        }
+        for (WebSocketSession session : userSessions) {
+            if (session.isOpen()) {
+                return true; 
+            }
+        }
+
+        return false;
+    }
 }

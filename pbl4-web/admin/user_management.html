@@ -33,6 +33,13 @@
         .modal-content { 
             background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;
         }
+        .btn-info { 
+            background-color: #17a2b8; 
+            color: white; 
+            border: none; 
+            margin-right: 5px;
+        }
+.btn-info:hover { background-color: #138496; }
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
     </style>
 </head>
@@ -41,7 +48,7 @@
         <a href="../live_feed.html" class="logo">■ Surveillance System</a>
         <nav>
             <a href="admin_dashboard.html">Thống kê</a>
-            <a href="user_management.html" class="active">Quản lý người dùng</a>
+            <a href="user_management.html" >Quản lý người dùng</a>
             <a href="admin_setting.html">Cài đặt Cá nhân</a>
         </nav>
     </header>
@@ -144,10 +151,7 @@
         // ---------------------------------------------
         async function loadUsers() {
             try {
-                // Tải danh sách User (chỉ gọi 1 lần)
                 const users = await getUserList(); 
-                
-                // Tải số liệu thống kê cho TẤT CẢ Users (bất đồng bộ)
                 const statsPromises = users.map(user => getUserStats(user.id).then(stats => ({ id: user.id, stats })));
                 const allStats = await Promise.all(statsPromises);
                 
@@ -183,6 +187,7 @@
                     <td>${stats.totalCameras}</td>
                     <td class="user-actions">
                         ${!isCurrentAdmin ? `
+                            <a href="user_detail.html?id=${user.id}" class="btn btn-info btn-sm">Xem</a>
                             <button class="btn btn-edit btn-sm" onclick="openUserModal(${user.id})">Sửa</button>
                             <button class="btn btn-delete btn-sm" onclick="handleDeleteUser(${user.id}, '${user.username}')">Xóa</button>
                         ` : 'Tài khoản của bạn'}

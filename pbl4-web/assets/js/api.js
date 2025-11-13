@@ -60,7 +60,6 @@ function handleApiError(error, functionName = "API call") {
             window.location.href = 'login.html';
         }
     }
-    // Ném lỗi ra ngoài để UI có thể xử lý (hiển thị thông báo)
     throw error;
 }
 

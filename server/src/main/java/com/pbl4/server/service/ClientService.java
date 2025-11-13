@@ -54,23 +54,17 @@ public class ClientService {
         if (existingClientOpt.isPresent()) {
             // ----- TRƯỜNG HỢP 1: Client ĐÃ TỒN TẠI -----
             ClientEntity client = existingClientOpt.get();
-
-            // Cập nhật thông tin mới nhất cho client
             client.setIpAddress(remoteIpAddress);       // Cập nhật IP hiện tại
             client.setStatus("online");                 // Đánh dấu là đang online
             client.setLastHeartbeat(Timestamp.from(Instant.now())); // Cập nhật thời gian kết nối cuối
             client.setClientName(request.getClientName()); // Cập nhật tên nếu client có đổi
             clientRepository.save(client);              // Lưu thay đổi vào DB
 
-            // Lấy danh sách camera liên kết với client này
-            // Do dùng FetchType.EAGER nên cameras đã được tải cùng client
             List<CameraDTO> cameras = client.getCameras().stream()
-                    .map(CameraDTO::new) // Chuyển từ CameraEntity sang CameraDTO
+                    .map(CameraDTO::new) 
                     .collect(Collectors.toList());
 
             System.out.println("Client '" + client.getClientName() + "' (ID: " + client.getId() + ") đã kết nối lại. Tìm thấy " + cameras.size() + " camera.");
-
-            // Trả về thông tin client ID, thông báo và danh sách camera
             ClientDTO clientDTO = new ClientDTO(client);
             return new ClientRegisterResponse(clientDTO, "Client đã đăng ký. Tải lại danh sách camera.", cameras);
 
@@ -110,13 +104,6 @@ public class ClientService {
         }
     }
 
-    
-    /**
-     * TẠO MỚI CLIENT - Đã sửa để nhận ID người dùng đang đăng nhập.
-     * @param clientDto Dữ liệu Client từ Client.
-     * @param userId ID của người dùng đang đăng nhập (lấy từ JWT Token).
-     * @return Client DTO đã được tạo.
-     */
     public Client createClient(Client clientDto, Long userId) {
         
         // 1. Tìm UserEntity (BẮT BUỘC)
@@ -140,20 +127,13 @@ public class ClientService {
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
-    /**
-     * Phương thức mới: Lấy danh sách Client theo User ID sở hữu.
-     * Phương thức này thay thế cho logic cũ getAllClients().
-     * @param userId ID của người dùng đang đăng nhập (Long).
-     * @return Danh sách Client DTO.
-     */
+
     public List<Client> getClientsByUserId(Long userId) {
         // Chuyển đổi Long userId sang int
         int userIdInt = userId.intValue();
-        
-        // Gọi phương thức Repository đã lọc theo User ID
+
         List<ClientEntity> entities = clientRepository.findByUserId(userIdInt);
-        
-        // Chuyển đổi Entity sang DTO và trả về
+
         return entities.stream().map(this::toDto).collect(Collectors.toList());
     }
 
@@ -258,7 +238,7 @@ public class ClientService {
     public long calculateDynamicPingInterval(int clientId) {
         ClientEntity client = clientRepository.findById(clientId).orElse(null);
         if (client == null ||  client.getCaptureIntervalSeconds() <= 0) {
-            return 180; // Mặc định 3 phút
+            return 180; 
         }
 
         long captureInterval = (long) client.getCaptureIntervalSeconds();
@@ -274,10 +254,7 @@ public class ClientService {
     }
     public void setClientOfflineAndTurnOffCameras(int clientId) {
         clientRepository.findById(clientId).ifPresent(client -> {
-            // 1. Tắt tất cả Cameras
             cameraRepository.updateAllByClientId(clientId, false); 
-            
-            // 2. Đặt trạng thái Client
             client.setStatus("OFFLINE"); 
             client.setLastPingAttempt(null);
             clientRepository.save(client);
@@ -298,10 +275,7 @@ public class ClientService {
         // 2. Lấy danh sách Camera sắp bị xóa
         List<CameraEntity> camerasToDelete = cameraRepository.findByClientId(clientId);
 
-        // 3. [BẮT BUỘC VÌ KHÔNG CÓ CASCADE]
-        // Xóa thủ công TẤT CẢ ẢNH (File vật lý + Metadata)
         for (CameraEntity camera : camerasToDelete) {
-            // Gọi ImageService để dọn dẹp ảnh
             imageService.deleteAllImagesForCamera(camera.getId());
         }
         clientRepository.delete(client);

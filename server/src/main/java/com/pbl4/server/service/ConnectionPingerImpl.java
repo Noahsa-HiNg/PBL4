@@ -12,10 +12,10 @@ public class ConnectionPingerImpl implements ConnectionPinger {
 
     @Override
     public void sendPing(String ipAddress, int clientId) {
-        System.out.println("----------------------------------------------------------------");
-        System.out.println("[PING SENT] Sending active check to Client ID: " + clientId + " at IP: " + ipAddress);
-        System.out.println("Client expected to call PUT /api/clients/ping-response/{id} within 3 minutes.");
-        System.out.println("----------------------------------------------------------------");
+//        System.out.println("----------------------------------------------------------------");
+//        System.out.println("[PING SENT] Sending active check to Client ID: " + clientId + " at IP: " + ipAddress);
+//        System.out.println("Client expected to call PUT /api/clients/ping-response/{id} within 3 minutes.");
+//        System.out.println("----------------------------------------------------------------");
 
         // --- LOGIC GỬI TÍN HIỆU THỰC TẾ ---
         

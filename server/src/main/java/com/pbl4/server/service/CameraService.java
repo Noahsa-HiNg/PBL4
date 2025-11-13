@@ -91,9 +91,12 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         return cameraRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
     }
     
-    // ... (Thêm các hàm getById, update, delete tương tự như ClientService)
-
-    // --- Helper Methods for Mapping ---
+    @Transactional
+    public Camera getCameraById(int cameraId) {
+        CameraEntity cameraEntity = cameraRepository.findById(cameraId)
+                .orElseThrow(() -> new EntityNotFoundException("Camera not found with id: " + cameraId));
+        return toDto(cameraEntity);
+    }
     private Camera toDto(CameraEntity entity) {
         Camera dto = new Camera();
         dto.setId(entity.getId());

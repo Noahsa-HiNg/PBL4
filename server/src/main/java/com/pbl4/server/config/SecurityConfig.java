@@ -120,7 +120,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://10.115.71.111:5500") // Allow your frontend origin
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://10.115.71.111:5500") 
                         //.allowedOrigins("**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allowed HTTP methods
                         .allowedHeaders("*") // Allow all headers (including Authorization)

@@ -45,30 +45,28 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable int id, @RequestBody User userDetails) {
         
-        // LẤY USER ID TỪ TOKEN
-        // Logic tương tự như các Controller khác
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        
-        // ... (Kiểm tra xác thực)
-        
+     
+        String currentUserRole = authentication.getAuthorities().stream()
+                .findFirst()
+                .map(auth -> auth.getAuthority().replace("ROLE_", "")) 
+                .orElse("VIEWER");
         Long currentUserId = userService.getUserIdByUsername(username);
+        if (!currentUserRole.equals("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 FORBIDDEN
+        }
 
         if (currentUserId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
         try {
-            // GỌI SERVICE VỚI CHỮ KÝ MỚI
-            // 1. Kiểm tra DTO.role có được gửi không
-            // 2. Gọi Service
-            User updatedUser = userService.updateUser(id, userDetails, currentUserId);
+            User updatedUser = userService.updateUser(id, userDetails, currentUserId,currentUserRole);
             return ResponseEntity.ok(updatedUser);
         } catch (SecurityException e) {
-            // Bắt lỗi khi user cố gắng cập nhật tài khoản người khác
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 403 FORBIDDEN
         } catch (RuntimeException e) {
-            // Bắt các lỗi khác (User not found, v.v.)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
@@ -79,15 +77,9 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
-    /**
-     * [BỔ SUNG MỚI] Lấy danh sách Users khớp với từ khóa tìm kiếm.
-     * @param keyword Từ khóa tìm kiếm (có thể là tên, email, hoặc ID).
-     * @return Danh sách User DTO.
-     */
+
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam("keyword") String keyword) {
-        
-        // 1. LẤY AUTHENTICATION
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Kiểm tra nếu chưa xác thực (dù SecurityConfig đã làm, đây là lớp bảo vệ cuối)

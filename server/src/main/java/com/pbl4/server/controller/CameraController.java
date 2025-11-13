@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-
+import com.pbl4.server.service.DashboardService;
 @RestController
 @RequestMapping("/api/cameras")
 public class CameraController {
@@ -43,8 +43,6 @@ public class CameraController {
     @GetMapping
     public ResponseEntity<List<Camera>> getAllCameras(
             @RequestParam(required = false) Integer clientId) {
-        
-        // 1. LẤY THÔNG TIN USER ĐANG ĐĂNG NHẬP
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
@@ -58,14 +56,9 @@ public class CameraController {
         }
 
         List<Camera> cameras;
-        
-        // 2. PHÂN LUỒNG LỌC
         if (clientId != null) {
-            // Lọc theo Client ID (chỉ những Client thuộc sở hữu của User này)
-            // Bạn cần sử dụng phương thức getCamerasByClientId() đã sửa đổi trong Service
             cameras = cameraService.getCamerasByClientId(clientId, userId); 
         } else {
-            // Lọc mặc định: Lấy TẤT CẢ Camera mà User đó sở hữu
             cameras = cameraService.getCamerasByUserId(userId);
         }
 
@@ -79,20 +72,17 @@ public class CameraController {
         try {
             String username = authentication.getName();
             CameraDTO newCamera = cameraService.addCamera(request, username);
-            // Trả về 201 Created và thông tin camera mới
             return ResponseEntity.status(HttpStatus.CREATED).body(newCamera);
         
         } catch (EntityNotFoundException e) {
-            // User hoặc Client không tìm thấy
+         
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         } catch (SecurityException e) {
-            // User không sở hữu client
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
-        } catch (IllegalStateException e) { // <-- BẮT LỖI XUNG ĐỘT
-            // Camera (IP+User) đã tồn tại
+        } catch (IllegalStateException e) {
+            
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            // Các lỗi khác (ví dụ: lỗi CSDL)
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server khi thêm camera.", "error", e.getMessage()));
         }
@@ -118,18 +108,14 @@ public class CameraController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCamera(@PathVariable Integer id, @RequestBody CameraDTO cameraDTO) {
         try {
-            // 1. Gọi service để thực hiện logic
-            // Chúng ta truyền cả id và DTO để đảm bảo an toàn
+
             CameraDTO updatedCamera = cameraService.updateCamera(id, cameraDTO);
-            
-            // 2. Trả về 200 OK cùng với camera đã cập nhật
+
             return ResponseEntity.ok(updatedCamera);
             
-        } catch (ResourceNotFoundException e) { // Đây là một Exception tùy chỉnh (xem bên dưới)
-            // 3. Trả về 404 nếu không tìm thấy camera
+        } catch (ResourceNotFoundException e) { 
             return ResponseEntity.status(404).body(e.getMessage());
         } catch (Exception e) {
-            // 4. Trả về 500 nếu có lỗi server khác
             return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
         }
     }

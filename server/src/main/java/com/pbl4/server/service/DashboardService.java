@@ -2,9 +2,10 @@ package com.pbl4.server.service;
 
 import com.pbl4.server.repository.UserRepository;
 import com.pbl4.server.repository.ClientRepository;
+import com.pbl4.server.repository.ImageRepository;
 import com.pbl4.server.repository.CameraRepository;
 import org.springframework.stereotype.Service;
-
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -13,11 +14,13 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final ClientRepository clientRepository;
     private final CameraRepository cameraRepository;
+    private final ImageRepository imageRepository;
 
-    public DashboardService(UserRepository userRepository, ClientRepository clientRepository, CameraRepository cameraRepository) {
+    public DashboardService(UserRepository userRepository, ClientRepository clientRepository, CameraRepository cameraRepository,ImageRepository imageRepository) {
         this.userRepository = userRepository;
         this.clientRepository = clientRepository;
         this.cameraRepository = cameraRepository;
+        this.imageRepository = imageRepository;
     }
 
     public Map<String, Long> getAdminMetrics() {
@@ -25,34 +28,42 @@ public class DashboardService {
         long totalUsers = userRepository.count();
         long totalClients = clientRepository.count();
         long totalCameras = cameraRepository.count();
+        long totalImages = imageRepository.count(); // Tổng số ảnh hệ thống
         
-        // Truy vấn số liệu theo trạng thái
         long activeCameras = cameraRepository.countByIsActive(true);
         long inactiveCameras = cameraRepository.countByIsActive(false);
 
-        // Trả về Map (JSON)
-        return Map.of(
-            "totalUsers", totalUsers,
-            "totalClients", totalClients,
-            "totalCameras", totalCameras,
-            "activeCameras", activeCameras,
-            "inactiveCameras", inactiveCameras
-        );
+        // Sử dụng HashMap để dễ dàng thêm mới
+        Map<String, Long> metrics = new HashMap<>();
+        metrics.put("totalUsers", totalUsers);
+        metrics.put("totalClients", totalClients);
+        metrics.put("totalCameras", totalCameras);
+        metrics.put("totalImages", totalImages); 
+        metrics.put("activeCameras", activeCameras);
+        metrics.put("inactiveCameras", inactiveCameras);
+        
+        return metrics;
     }
     public Map<String, Long> getUserStats(Long userId) {
-        // Chuyển đổi Long userId sang int
         int userIdInt = userId.intValue();
 
-        // Đếm Clients thuộc sở hữu
         long totalClients = clientRepository.countByUserId(userIdInt);
-        
-        // Đếm Cameras thuộc sở hữu (thông qua Client)
         long totalCameras = cameraRepository.countByClientUserId(userIdInt);
+        long totalImages = imageRepository.countByCameraClientUserId(userIdInt);
 
-        // Trả về Map (JSON)
         return Map.of(
             "totalClients", totalClients,
-            "totalCameras", totalCameras
+            "totalCameras", totalCameras,
+            "totalImages", totalImages 
+        );
+        
+    }
+    public Map<String, Long> getCameraStats(int cameraId) {
+        long totalImages = imageRepository.countByCameraId(cameraId);
+        
+        return Map.of(
+            "cameraId", (long) cameraId,
+            "totalImages", totalImages
         );
     }
 }
