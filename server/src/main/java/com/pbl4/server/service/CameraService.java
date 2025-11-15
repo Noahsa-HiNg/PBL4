@@ -285,6 +285,22 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
 	            
 	        // 3. Xóa Camera (chỉ khi xóa ảnh thành công)
 	        cameraRepository.delete(camera);
+	        String username = null;
+	        if (camera.getClient() != null && camera.getClient().getUser() != null) {
+	            username = camera.getClient().getUser().getUsername();
+	        }
+	      if (username != null) {
+          try {
+              Map<String, Object> msg = Map.of(
+                  "type", "CAMERA_DELETED",
+                  "id", cameraId
+              );
+              String json = objectMapper.writeValueAsString(msg);
+              webSocketHandler.sendMessageToUser(username, json);
+          } catch (Exception e) {
+              System.err.println("WebSocket lỗi: " + e.getMessage());
+          }
+      }
 	    }
 }
     
