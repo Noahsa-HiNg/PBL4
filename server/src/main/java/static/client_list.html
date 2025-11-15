@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Clients</title>
+    <link rel="stylesheet" href="/assets/css/style.css"> 
+    <style>
+        .client-container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .client-container h1 { text-align: center; margin-bottom: 25px; }
+        .client-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .client-table th, .client-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .client-table th { background-color: var(--color-background-muted); }
+        .loading-message, .error-message { text-align: center; margin-top: 20px; }
+        .error-message { color: var(--color-status-danger); }
+    </style>
+</head>
+<body>
+    <div class="client-container">
+        <h1>Danh Sách Các Client Sở Hữu</h1>
+        
+        <div id="client-data-area">
+            <p id="loading-status" class="loading-message">Đang tải dữ liệu Clients...</p>
+            <table class="client-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên Client</th>
+                        <th>Địa chỉ IP</th>
+                        <th>Trạng thái</th>
+                        <th>Cấu hình ảnh</th>
+                        <th>Lần cuối hoạt động</th>
+                    </tr>
+                </thead>
+                <tbody id="client-list-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/assets/js/config.js"></script> 
+    <script src="/assets/js/api.js"></script> 
+    <script src="client_list.js"></script>
+</body>
+</html>

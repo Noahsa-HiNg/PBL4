@@ -24,6 +24,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint; // For 401 response
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // Reference point
 import org.springframework.web.servlet.config.annotation.CorsRegistry; // For CORS Bean
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer; // For CORS Bean
 
 import java.util.HashMap;
@@ -84,15 +85,26 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
             		.requestMatchers(
-            		        "/login.html", 
-            		        "/register.html"
+            				"/",
+            				"/login.html", 
+            		        "/register.html", 
+            		        "/forgot-password.html",
+            		        "/reset-password.html",
+            		        "/live_feed.html", 
+            		        "/snapshot_management.html",
+            		        "/client_setup.html",
+            		        "/user_settings.html",
+            		        "/stream.html",
+            		        "/assets/**", 
+            		        "/admin/**",
+            		        "/camera_list.html"
             		        
             		    ).permitAll()
                 // Allow login, error pages, and static assets publicly
             	.requestMatchers("/ws/updates/**").permitAll()
                 .requestMatchers("/api/auth/**", "/error", "/assets/**").permitAll()
                 // **Allow viewing images publicly (if desired)** - Place specific rules first
-                //.requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/images/view/**").permitAll()
@@ -117,14 +129,20 @@ public class SecurityConfig {
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
+        	@Override
+            public void addViewControllers(ViewControllerRegistry registry) {
+                
+                registry.addViewController("/")
+                        .setViewName("forward:/login.html");
+            }
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://10.115.71.111:5500") 
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://10.10.16.27:8080") 
                         //.allowedOrigins("**")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allowed HTTP methods
-                        .allowedHeaders("*") // Allow all headers (including Authorization)
-                        .allowCredentials(true); // Allow sending credentials (like tokens)
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") 
+                        .allowedHeaders("*")
+                        .allowCredentials(true); 
             }
         };
     }

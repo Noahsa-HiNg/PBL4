@@ -4,6 +4,9 @@ import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.security.JwtTokenProvider; 
 import pbl4.common.model.User;
 import com.pbl4.server.service.UserService;
+
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -96,29 +99,46 @@ public class AuthController {
     @Autowired // <-- Bổ sung UserService
     private UserService userService;
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User registrationRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody User userDto) { // Dùng DTO 'User' của common
         try {
-            // 1. Dùng Service để tạo User mới.
-            // Service sẽ xử lý: kiểm tra trùng username, mã hóa mật khẩu, và lưu DB.
-            User createdUser = userService1.createUser(registrationRequest);
-
-            // 2. Trả về thông báo thành công. KHÔNG trả về mật khẩu hash.
-            // Dùng Map để định dạng JSON phản hồi.
-            Map<String, Object> response = Map.of(
-                "message", "User registered successfully!",
-                "username", createdUser.getUsername(),
-                "id", createdUser.getId()
-            );
-
-            return new ResponseEntity<>(response, HttpStatus.CREATED); // Mã 201 CREATED
-            
+            UserEntity registeredUser = userService.registerUser(userDto);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."));
         } catch (RuntimeException e) {
-            // Xử lý lỗi khi username đã tồn tại (nếu Service ném ra RuntimeException)
-            if (e.getMessage().contains("Username already exists")) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
-            }
-            // Xử lý các lỗi Service khác (ví dụ: DB lỗi)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Registration failed: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
+        try {
+            userService.verifyEmail(token);
+            return ResponseEntity.ok("Xác thực email thành công! Bạn có thể đăng nhập.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi: " + e.getMessage());
+        }
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+            userService.createPasswordResetToken(email);
+            return ResponseEntity.ok(Map.of("message", "Link đặt lại mật khẩu đã được gửi đến email của bạn."));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        }
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        try {
+            String token = body.get("token");
+            String newPassword = body.get("newPassword");
+            
+            // (Thêm kiểm tra validate mật khẩu mới nếu cần, ví dụ: phải đủ 8 ký tự)
+            
+            userService.resetPassword(token, newPassword);
+            return ResponseEntity.ok(Map.of("message", "Mật khẩu đã được đặt lại thành công."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
     }
     

@@ -225,16 +225,16 @@ public class ClientService {
         entity.setCompressionQuality(dto.getCompressionQuality());
         return entity;
     }
-    
-    public void clientPingResponded(int clientId) {
-        clientRepository.findById(clientId).ifPresent(client -> {
-            // Đặt lại mốc thời gian và trạng thái chờ
-            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
-            client.setLastPingAttempt(null); // Reset Ping Attempt
-            client.setStatus("SUSPENDED"); // Giữ trạng thái đang treo
-            clientRepository.save(client);
-        });
-    }
+//    
+//    public void clientPingResponded(int clientId) {
+//        clientRepository.findById(clientId).ifPresent(client -> {
+//            // Đặt lại mốc thời gian và trạng thái chờ
+//            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
+//            client.setLastPingAttempt(null); // Reset Ping Attempt
+//            client.setStatus("SUSPENDED"); // Giữ trạng thái đang treo
+//            clientRepository.save(client);
+//        });
+//    }
     public long calculateDynamicPingInterval(int clientId) {
         ClientEntity client = clientRepository.findById(clientId).orElse(null);
         if (client == null ||  client.getCaptureIntervalSeconds() <= 0) {

@@ -79,18 +79,14 @@ public class ClientController {
         }
 
         try {
-            // Sử dụng phương thức GET ONE đã được lọc theo ID sở hữu
             return ResponseEntity.ok(clientService.getClientById(id, userId));
         } catch (RuntimeException e) {
-            // Bắt lỗi "Client not found or access denied"
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); 
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateClient(@PathVariable int id, @RequestBody Client clientDetails) {
-        
-        // 1. XÁC THỰC VÀ LẤY USER ID
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
@@ -105,45 +101,41 @@ public class ClientController {
         }
 
         try {
-            // 2. GỌI SERVICE CẬP NHẬT (Service đã kiểm tra quyền sở hữu)
+      
             Client updatedClient = clientService.updateClient(id, clientDetails, currentUserId);
             
-            // 3. THÔNG BÁO WEBSOCKET ĐẾN CLIENT APP
+    
             
             String ownerUsername = clientService.getUsernameByClientId(id); 
 
             if (webSocketHandler != null && ownerUsername != null) {
                 
-                // Tạo JSON Payload (Gửi toàn bộ DTO Client đã cập nhật)
                 String dtoJson = objectMapper.writeValueAsString(updatedClient);
                 String jsonMessage = String.format(
                     "{\"type\": \"CONFIG_UPDATE\", \"clientId\": %d, \"config\": %s}",
                     id, dtoJson
                 );
                 
-                // GỬI TIN ĐẾN TẤT CẢ SESSIONS CỦA USER ĐÓ
                 webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
             }
             return ResponseEntity.ok(updatedClient);
             
         } catch (EntityNotFoundException e) {
-            // Bắt lỗi "Access Denied" hoặc "Not Found" từ Service
+
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         } catch (JsonProcessingException e) {
-            // Bắt lỗi khi tạo JSON cho WebSocket
+
             System.err.println("Client updated, but WebSocket notification failed: " + e.getMessage());
-            // Trả về thành công, vì Client đã được cập nhật
+
             return ResponseEntity.ok(Map.of("message", "Client updated, but notification failed."));
         } catch (Exception e) {
-            // Bắt các lỗi chung khác
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteClient(@PathVariable int id) {
-        
-        // 1. Lấy User ID từ Token
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         Long currentUserId = userService.getUserIdByUsername(username);
@@ -153,21 +145,16 @@ public class ClientController {
         }
 
         try {
-            // 2. Gọi Service
             clientService.deleteClient(id, currentUserId);
-            
-            // 3. Trả về thành công
             return ResponseEntity.noContent().build();
             
         } catch (EntityNotFoundException e) {
-            // Bắt lỗi nếu User không sở hữu Client
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            // Bắt lỗi nếu xóa file I/O thất bại
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error deleting client: " + e.getMessage()));
         }
     }
-    @GetMapping // API lấy danh sách Clients (chỉ của người dùng đang đăng nhập)
+    @GetMapping 
     public ResponseEntity<List<Client>> getClientsByUserId() {
         
         // 1. LẤY USER ID TỪ SECURITY CONTEXT
@@ -189,15 +176,14 @@ public class ClientController {
         
         return ResponseEntity.ok(clients);
     }
-    @PutMapping("/ping-response/{clientId}")
-    public ResponseEntity<?> recordPingResponse(@PathVariable int clientId) {
-        // LƯU Ý: Thêm logic xác thực Token/Client ID
-        clientService.clientPingResponded(clientId);
-        return ResponseEntity.ok().build();
-    }
+//    @PutMapping("/ping-response/{clientId}")
+//    public ResponseEntity<?> recordPingResponse(@PathVariable int clientId) {
+//        // LƯU Ý: Thêm logic xác thực Token/Client ID
+//        clientService.clientPingResponded(clientId);
+//        return ResponseEntity.ok().build();
+//    }
     @PutMapping("/logout/{clientId}")
     public ResponseEntity<?> clientLogout(@PathVariable int clientId) {
-        // LƯU Ý: Thêm logic xác thực Token/Client ID
         clientService.setClientOfflineAndTurnOffCameras(clientId);
         return ResponseEntity.ok().build();
     }

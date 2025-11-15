@@ -61,7 +61,7 @@ pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.properties
 release.properties
-
+application.properties
 # Gradle
 .gradle/
 build/

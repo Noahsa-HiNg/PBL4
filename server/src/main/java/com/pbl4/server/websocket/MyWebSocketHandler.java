@@ -1,8 +1,13 @@
 package com.pbl4.server.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Thêm import
+import com.pbl4.server.entity.ClientEntity;
+import com.pbl4.server.repository.CameraRepository;
+import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.security.JwtTokenProvider; // Thêm import
 import com.pbl4.server.service.ClientService;
+
+import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired; // Thêm import
 import org.springframework.stereotype.Component;
@@ -19,42 +24,54 @@ import java.util.Collections;
 @Component
 public class MyWebSocketHandler extends TextWebSocketHandler {
 
-    
+	private static final String STATUS_SUSPENDED = "SUSPENDED";
+    private static final String STATUS_OFFLINE = "OFFLINE";
 	private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
     private final Map<String, String> userBySessionId = new ConcurrentHashMap<>();
     @Autowired
     private ClientService clientService;
-    // === INJECT CÁC DEPENDENCY CẦN THIẾT ===
+    
+    private final ClientRepository clientRepository;
+    private final CameraRepository cameraRepository;
     @Autowired
     private JwtTokenProvider tokenProvider;
 
     @Autowired
     private ObjectMapper objectMapper; // Để đọc JSON từ client
 
+    @Autowired
+    public MyWebSocketHandler(ClientRepository clientRepository, CameraRepository cameraRepository) {
+        this.clientRepository = clientRepository;
+        this.cameraRepository = cameraRepository;
+    }
     @Override
+    @Transactional
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // Khi client vừa kết nối, chúng ta CHƯA biết họ là ai.
-        // Chỉ ghi log và chờ client gửi tin nhắn xác thực.
-        System.out.println("WebSocket: Client " + session.getId() + " đã kết nối. Đang chờ xác thực...");
+        String username = session.getPrincipal().getName(); 
+        // sessions.put(username, session); // Logic quản lý session của bạn
+        ClientEntity client = clientRepository.findByUserUsername(username);
+        
+        if (client != null) {
+            client.setStatus(STATUS_SUSPENDED);
+            clientRepository.save(client);
+            System.out.println("WebSocket connected for Client: " + client.getId() + " -> SUSPENDED");
+        }
     }
 
     @Override
+    @Transactional
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        // Client ngắt kết nối, dọn dẹp cả 2 map
-    	String username = userBySessionId.remove(session.getId());
-        if (username != null) {
-            Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
-            if (userSessions != null) {
-                // Xóa session cụ thể này khỏi Set
-                userSessions.remove(session); 
-                // Nếu đây là session cuối cùng, xóa cả key username
-                if (userSessions.isEmpty()) {
-                    sessionsByUsername.remove(username);
-                }
-            }
-            System.out.println("WebSocket: User " + username + " (Session " + session.getId() + ") đã ngắt kết nối.");
-        }else {
-            System.out.println("WebSocket: Client " + session.getId() + " (chưa xác thực) đã ngắt kết nối.");
+        String username = session.getPrincipal().getName();
+        // sessions.remove(username); // Logic quản lý session của bạn
+
+        ClientEntity client = clientRepository.findByUserUsername(username);
+
+        if (client != null) {
+            client.setStatus(STATUS_OFFLINE);
+            clientRepository.save(client);
+            cameraRepository.updateAllByClientId(client.getId(), false); 
+            
+            System.out.println("WebSocket disconnected for Client: " + client.getId() + " -> OFFLINE");
         }
     }
 

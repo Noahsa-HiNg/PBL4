@@ -31,4 +31,5 @@ public interface ClientRepository extends JpaRepository<ClientEntity, Integer> {
     List<ClientEntity> findByStatusAndLastImageReceivedBefore(String status, Timestamp timeThreshold);
     @Query("SELECT c.user.username FROM ClientEntity c WHERE c.id = :clientId")
     Optional<String> findUsernameByClientId(@Param("clientId") int clientId);
+	ClientEntity findByUserUsername(String username);
 }

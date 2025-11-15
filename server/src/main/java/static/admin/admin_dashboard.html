@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển Admin</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <script src="../assets/js/auth.js"></script> 
+    <style>
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1200px; margin: 30px auto; }
+        .admin-card { padding: 25px; border: 1px solid var(--color-border); border-radius: var(--border-radius-main); text-align: center; }
+    </style>
+</head>
+<body>
+   <header class="app-header">
+        <a href="admin_dashboard.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="admin_dashboard.html">Thống kê</a>
+            <a href="user_management.html">Quản lý người dùng</a>
+            <a href="admin_setting.html">Cài đặt Cá nhân</a>
+        </nav>
+    </header>
+
+    <main>
+    <h1 class="page-title">Bảng Điều Khiển Admin</h1>
+    <p>Tổng quan hệ thống và khu vực quản lý.</p>
+    
+    <div class="metrics-grid admin-grid">
+        <div class="admin-card metric-card">
+            <h2>Tổng User</h2>
+            <p id="metric-users" class="metric-value">...</p>
+        </div>
+        <div class="admin-card metric-card">
+            <h2>Tổng Clients</h2>
+            <p id="metric-clients" class="metric-value">...</p>
+        </div>
+        <div class="admin-card metric-card">
+            <h2>Tổng Cameras</h2>
+            <p id="metric-total-cameras" class="metric-value">...</p>
+        </div>
+        <div class="admin-card metric-card status-success">
+            <h2>Camera Hoạt động</h2>
+            <p id="metric-active-cameras" class="metric-value">...</p>
+        </div>
+        <div class="admin-card metric-card status-danger">
+            <h2>Camera Dừng</h2>
+            <p id="metric-inactive-cameras" class="metric-value">...</p>
+        </div>
+    </div>
+    
+    <h2 class="page-title">Công cụ Quản trị</h2>
+    <div class="admin-grid">
+        <a href="user_management.html" class="admin-card">
+            <h2>Quản lý Tài khoản (CRUD)</h2>
+            <p>Thêm, sửa, xóa, tìm kiếm người dùng.</p>
+        </a>
+    </div>
+</main>
+
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script>
+        // Bắt buộc kiểm tra quyền truy cập khi tải trang
+        
+        
+    // Bắt buộc kiểm tra quyền truy cập khi tải trang
+    document.addEventListener('DOMContentLoaded', () => {
+        const userRole = localStorage.getItem('role');
+        if (userRole !== 'ADMIN') {
+            alert("Bạn không có quyền truy cập trang này.");
+            window.location.href = '../live_feed.html'; // Chuyển hướng về trang mặc định
+        }
+        
+        // Nếu là ADMIN, tải số liệu
+        loadAdminMetrics();
+    });
+
+    /**
+     * Hàm gọi API Metrics và đổ dữ liệu vào các thẻ.
+     */
+    async function loadAdminMetrics() {
+        const metricsUrl = `${API_BASE_URL}/admin/metrics`; // URL API Metrics mới
+        
+        try {
+            const response = await fetch(metricsUrl, { method: 'GET', headers: getAuthHeaders() });
+            
+            if (!response.ok) {
+                // Xử lý lỗi (vd: 403 Forbidden nếu SecurityConfig chưa được sửa)
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Lỗi tải số liệu: ${response.status}`);
+            }
+            
+            const metrics = await response.json();
+
+            // Đổ dữ liệu vào HTML
+            document.getElementById('metric-users').textContent = metrics.totalUsers;
+            document.getElementById('metric-clients').textContent = metrics.totalClients;
+            document.getElementById('metric-total-cameras').textContent = metrics.totalCameras;
+            document.getElementById('metric-active-cameras').textContent = metrics.activeCameras;
+            document.getElementById('metric-inactive-cameras').textContent = metrics.inactiveCameras;
+            
+        } catch (error) {
+            console.error("Lỗi khi tải Metrics:", error);
+            document.getElementById('metric-users').textContent = `Lỗi: ${error.message}`;
+        }
+    }
+
+    </script>
+</body>
+</html>

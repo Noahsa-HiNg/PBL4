@@ -19,4 +19,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> { // 
 	           "OR u.email LIKE %:keyword% " +
 	           "OR CAST(u.id AS string) = :keyword") // Chuyển ID sang String để so sánh
 	    List<UserEntity> searchByKeyword(@Param("keyword") String keyword);
+	Optional<UserEntity> findByEmail(String email);
+    Optional<UserEntity> findByEmailVerificationToken(String token);
+    Optional<UserEntity> findByPasswordResetToken(String token);
 }

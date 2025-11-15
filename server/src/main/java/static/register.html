@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký</title>
+    <link rel="stylesheet" href="/assets/css/style.css"> 
+    <style>
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--color-background-muted); } /* Thêm display:flex và min-height */
+        .register-container { width: 100%; max-width: 450px; padding: 2.5rem; background-color: var(--color-background-surface); border-radius: var(--border-radius-main); box-shadow: 0 8px 20px rgba(0,0,0,0.07); }
+        .register-container h1 { text-align: center; margin-bottom: 2rem; }
+        .register-container .btn { width: 100%; margin-top: 1rem; } /* Thêm margin-top */
+        #error-message, #success-message { text-align: center; margin-top: 1rem; display: none; }
+        #error-message { color: var(--color-status-danger); }
+        #success-message { color: var(--color-status-success); }
+        .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1>Tạo tài khoản mới</h1>
+        <form id="register-form">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" id="register-button">Đăng Ký</button>
+            <p id="error-message"></p>
+            <p id="success-message"></p>
+        </form>
+        <p class="login-link">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+    </div>
+
+    <script src="/assets/js/config.js"></script> 
+    <script src="/assets/js/api.js"></script> <script>
+        const registerForm = document.getElementById('register-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const registerButton = document.getElementById('register-button');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            registerButton.disabled = true;
+            registerButton.textContent = 'Đang xử lý...';
+
+            // Dữ liệu gửi đi
+            const userData = {
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value, // Server sẽ hash
+                role: "VIEWER" // Luôn gửi role là "VIEWER" cho trang đăng ký công khai
+            };
+
+            try {
+                // Kiểm tra xem hàm createUser có tồn tại không (an toàn hơn)
+                if (typeof createUser !== 'function') {
+                    throw new Error("Chức năng đăng ký chưa sẵn sàng.");
+                }
+
+                const newUser = await registerUser(userData);
+
+                // Xử lý thành công
+                successMessage.textContent = `Đăng ký thành công cho '${newUser.username}'! Bạn có thể đăng nhập.`;
+                successMessage.style.display = 'block';
+                registerForm.reset(); // Xóa form
+
+            } catch (error) {
+                // Xử lý lỗi (vd: username tồn tại, lỗi server)
+                errorMessage.textContent = error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+                errorMessage.style.display = 'block';
+            } finally {
+                // Luôn bật lại nút
+                registerButton.disabled = false;
+                registerButton.textContent = 'Đăng Ký';
+            }
+        });
+    </script>
+</body>
+</html>

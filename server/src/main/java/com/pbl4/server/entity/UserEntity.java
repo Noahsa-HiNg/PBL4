@@ -36,7 +36,32 @@ public class UserEntity implements Serializable {
     // Liên kết 1-Nhiều: 1 User sở hữu nhiều Client
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<ClientEntity> clients;
+    @Column(name = "email_verification_token")
+    private String emailVerificationToken;
+    
+    @Column(name = "email_verified")
+    private boolean emailVerified = false; // Mặc định là false
 
+    // --- BỔ SUNG CHO QUÊN MẬT KHẨU ---
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_token_expiry")
+    private Timestamp passwordResetTokenExpiry; // Thời gian token hết hạn
+
+    // --- Thêm Getters và Setters cho các trường mới ---
+    
+    public String getEmailVerificationToken() { return emailVerificationToken; }
+    public void setEmailVerificationToken(String token) { this.emailVerificationToken = token; }
+    
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean verified) { this.emailVerified = verified; }
+    
+    public String getPasswordResetToken() { return passwordResetToken; }
+    public void setPasswordResetToken(String passwordResetToken) { this.passwordResetToken = passwordResetToken; }
+
+    public Timestamp getPasswordResetTokenExpiry() { return passwordResetTokenExpiry; }
+    public void setPasswordResetTokenExpiry(Timestamp passwordResetTokenExpiry) { this.passwordResetTokenExpiry = passwordResetTokenExpiry; }
     // --- Getters and Setters ---
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

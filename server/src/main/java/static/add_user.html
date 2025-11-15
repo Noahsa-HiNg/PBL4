@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Người Dùng Mới</title>
+    <link rel="stylesheet" href="/assets/css/style.css"> <script src="auth.js"></script> <style>
+        .form-container { max-width: 500px; margin: auto; }
+        #status-message { margin-top: 1rem; display: none; }
+        .back-link { display: block; margin-bottom: 1.5rem; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <nav>
+            <a href="live_feed.html">Live Feed</a>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="user_settings.html">Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-container">
+             <a href="user_management.html" class="back-link">&larr; Quay lại Danh sách User</a>
+            <h1 class="page-title">Thêm Người Dùng Mới</h1>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                 <div class="form-group">
+                    <label for="role">Vai trò</label>
+                    <select id="role" class="form-control" required>
+                        <option value="VIEWER" selected>Viewer</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" id="add-user-button">Thêm Người Dùng</button>
+                <p id="status-message"></p>
+            </form>
+        </div>
+    </main>
+
+    <footer class="app-footer"> ... </footer>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/api.js"></script> <script>
+        // Code JavaScript giống hệt như câu trả lời trước
+        const addUserForm = document.getElementById('add-user-form');
+        const statusMessage = document.getElementById('status-message');
+        const addUserButton = document.getElementById('add-user-button');
+
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusMessage.style.display = 'none';
+            addUserButton.disabled = true;
+            addUserButton.textContent = 'Đang xử lý...';
+
+            const userData = { /* ... Lấy dữ liệu từ form ... */
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            };
+
+            try {
+                if (typeof createUser !== 'function') { throw new Error("API 'createUser' không tồn tại."); }
+                const newUser = await createUser(userData); // Gọi API
+                showStatus(`Đã thêm '${newUser.username}' thành công!`, false);
+                addUserForm.reset();
+            } catch (error) {
+                showStatus(error.message || 'Thêm thất bại.', true);
+            } finally {
+                addUserButton.disabled = false;
+                addUserButton.textContent = 'Thêm Người Dùng';
+            }
+        });
+
+        function showStatus(message, isError = false) { /* ... Hiển thị thông báo ... */
+            statusMessage.textContent = message;
+            statusMessage.style.color = isError ? 'var(--color-status-danger)' : 'var(--color-status-success)';
+            statusMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

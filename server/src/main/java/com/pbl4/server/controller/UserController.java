@@ -24,11 +24,11 @@ public class UserController {
         this.dashboardService = dashboardService; // Tiêm dependency
     }
     // API để tạo user mới
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-    }
+//    @PostMapping
+//    public ResponseEntity<User> createUser(@RequestBody User user) {
+//        User createdUser = userService.createUser(user);
+//        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+//    }
 
     // API để lấy tất cả user
     @GetMapping
@@ -53,9 +53,7 @@ public class UserController {
                 .map(auth -> auth.getAuthority().replace("ROLE_", "")) 
                 .orElse("VIEWER");
         Long currentUserId = userService.getUserIdByUsername(username);
-        if (!currentUserRole.equals("ADMIN")) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 FORBIDDEN
-        }
+        
 
         if (currentUserId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);

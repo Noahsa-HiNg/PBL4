@@ -87,8 +87,6 @@ public class ImageController {
                     // Nếu dùng ObjectMapper: objectMapper.writeValueAsString(savedDto) 
                     "{\"id\":" + savedDto.getId() + ", \"camera_id\":" + savedDto.getCameraId() + ", \"url\":\"" + savedDto.getFilePath() + "\"}"
                 );
-                
-                // Gửi tin nhắn đến người dùng hiện tại
                 webSocketHandler.sendMessageToUser(currentUsername, jsonMessage);
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
@@ -149,7 +147,7 @@ public class ImageController {
     private static final Logger logger = LoggerFactory.getLogger(ImageController.class);
     @GetMapping("/view") 
     public ResponseEntity<Resource> getImage(
-        // THAY ĐỔI 2: Đổi từ @PathVariable thành @RequestParam
+      
         @RequestParam("path") String relativePath 
     ) {
         logger.info("ImageController: Nhận yêu cầu xem ảnh: '{}'", relativePath);
@@ -164,7 +162,6 @@ public class ImageController {
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                // Determine content type dynamically if possible, default to JPEG
                 logger.debug("ImageController: Tìm thấy và trả về file: {}", filePath.toString());
                 String contentType = determineContentType(filePath); // Giữ nguyên hàm này của bạn
 
