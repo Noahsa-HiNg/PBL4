@@ -7,8 +7,6 @@ const token = localStorage.getItem('authToken');
 const currentPage = window.location.pathname.split('/').pop();
 
 if (!token && currentPage !== 'login.html') {
-    // Nếu chưa đăng nhập VÀ không ở trang login
-    // -> Đá về trang login
     console.log("Chưa đăng nhập, chuyển về login.html");
     window.location.href = 'login.html';
 } else if (token && currentPage === 'login.html') {

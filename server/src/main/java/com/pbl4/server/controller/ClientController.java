@@ -167,7 +167,6 @@ public class ClientController {
 
         Long userId = userService.getUserIdByUsername(username);
         if (userId == null) {
-             // User được xác thực nhưng không tồn tại trong DB (lỗi cấu hình)
              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); 
         }
 

@@ -273,23 +273,27 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
 //            }
 //        }
 //    }
-	public void deleteCamera(int cameraId, Long currentUserId) throws IOException {
-	        
-	        // 1. Kiểm tra quyền sở hữu (Tìm camera theo ID và ID chủ sở hữu)
-	        CameraEntity camera = cameraRepository.findByIdAndClientUserId(cameraId, currentUserId.intValue())
-	                .orElseThrow(() -> new EntityNotFoundException("Access Denied: Camera not found or not owned by user."));
-	
-	        // 2. Xóa tất cả ảnh liên quan (gọi ImageService)
-	        // (Bước này sẽ xóa cả file và metadata)
-	        imageService.deleteAllImagesForCamera(cameraId);
-	            
-	        // 3. Xóa Camera (chỉ khi xóa ảnh thành công)
-	        cameraRepository.delete(camera);
-	        String username = null;
-	        if (camera.getClient() != null && camera.getClient().getUser() != null) {
-	            username = camera.getClient().getUser().getUsername();
-	        }
-	      if (username != null) {
+    @Transactional
+    public String deleteCamera(int cameraId, Long currentUserId) throws IOException {
+        
+        CameraEntity camera = cameraRepository.findByIdAndClientUserId(cameraId, currentUserId.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Access Denied: Camera not found or not owned by user."));
+
+        // Lấy username TRƯỚC KHI xóa
+        String username = null;
+        if (camera.getClient() != null && camera.getClient().getUser() != null) {
+            username = camera.getClient().getUser().getUsername();
+        }
+        
+        // 1. Xóa ảnh
+        imageService.deleteAllImagesForCamera(cameraId);
+
+        // 2. Xóa camera
+        System.err.println("bắt đầu xóa");
+        cameraRepository.deleteCameraByIdCustom(cameraId);
+        //cameraRepository.delete(camera);
+        System.err.println("xóa thành công");
+        if (username != null) {
           try {
               Map<String, Object> msg = Map.of(
                   "type", "CAMERA_DELETED",
@@ -301,6 +305,11 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
               System.err.println("WebSocket lỗi: " + e.getMessage());
           }
       }
-	    }
+        // 3. Trả về username để Controller xử lý WebSocket
+        return username;
+        
+        // KHÔNG gửi WebSocket ở đây
+    }
+ 
 }
     

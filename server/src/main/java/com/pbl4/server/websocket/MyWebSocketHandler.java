@@ -1,15 +1,17 @@
 package com.pbl4.server.websocket;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // Thêm import
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.entity.ClientEntity;
+import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.CameraRepository;
 import com.pbl4.server.repository.ClientRepository;
-import com.pbl4.server.security.JwtTokenProvider; // Thêm import
+import com.pbl4.server.repository.UserRepository;
+import com.pbl4.server.security.JwtTokenProvider;
 import com.pbl4.server.service.ClientService;
 
 import jakarta.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired; // Thêm import
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -18,110 +20,157 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Set; // <-- Import Set
+import java.util.Set;
 import java.util.Collections;
+
 @Component
 public class MyWebSocketHandler extends TextWebSocketHandler {
 
-	private static final String STATUS_SUSPENDED = "SUSPENDED";
+    // --- CHỈ CÒN 2 TRẠNG THÁI ---
+    private static final String STATUS_ONLINE = "ACTIVE"; 
     private static final String STATUS_OFFLINE = "OFFLINE";
-	private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
+    @Autowired
+    private UserRepository userRepository;
+    private final Map<String, Set<WebSocketSession>> sessionsByUsername = new ConcurrentHashMap<>();
+    //private final Map<String, WebSocketSession> appSessionByUsername = new ConcurrentHashMap<>();
     private final Map<String, String> userBySessionId = new ConcurrentHashMap<>();
+    private final Map<String, Integer> clientIdBySessionId = new ConcurrentHashMap<>();
+    
     @Autowired
     private ClientService clientService;
     
     private final ClientRepository clientRepository;
     private final CameraRepository cameraRepository;
+    
     @Autowired
     private JwtTokenProvider tokenProvider;
 
     @Autowired
-    private ObjectMapper objectMapper; // Để đọc JSON từ client
+    private ObjectMapper objectMapper;
 
     @Autowired
     public MyWebSocketHandler(ClientRepository clientRepository, CameraRepository cameraRepository) {
         this.clientRepository = clientRepository;
         this.cameraRepository = cameraRepository;
     }
+
     @Override
-    @Transactional
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        String username = session.getPrincipal().getName(); 
-        // sessions.put(username, session); // Logic quản lý session của bạn
-        ClientEntity client = clientRepository.findByUserUsername(username);
-        
-        if (client != null) {
-            client.setStatus(STATUS_SUSPENDED);
-            clientRepository.save(client);
-            System.out.println("WebSocket connected for Client: " + client.getId() + " -> SUSPENDED");
-        }
+        System.out.println("WebSocket: Session " + session.getId() + " đã kết nối. Đang chờ xác thực...");
     }
 
     @Override
     @Transactional
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String username = session.getPrincipal().getName();
-        // sessions.remove(username); // Logic quản lý session của bạn
+        String sessionId = session.getId();
+        
+        // 1. KIỂM TRA XEM CÓ PHẢI LÀ "APP" VỪA NGẮT KHÔNG
+        Integer clientId = clientIdBySessionId.remove(sessionId);
+        
+        if (clientId != null) {
 
-        ClientEntity client = clientRepository.findByUserUsername(username);
-
-        if (client != null) {
-            client.setStatus(STATUS_OFFLINE);
-            clientRepository.save(client);
-            cameraRepository.updateAllByClientId(client.getId(), false); 
-            
-            System.out.println("WebSocket disconnected for Client: " + client.getId() + " -> OFFLINE");
+            System.out.println("WebSocket: APP Client (ID: " + clientId + ") đã ngắt kết nối.");
+            clientRepository.findById(clientId).ifPresent(client -> {
+                client.setStatus(STATUS_OFFLINE);
+                clientRepository.save(client);
+                cameraRepository.updateAllByClientId(client.getId(), false);
+                System.out.println("WebSocket: Đã set Client ID " + clientId + " sang OFFLINE.");
+            });
+        }
+        String username = userBySessionId.remove(sessionId);
+        if (username != null) {
+            Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
+            if (userSessions != null) {
+                userSessions.remove(session);
+                if (userSessions.isEmpty()) {
+                    sessionsByUsername.remove(username);
+                }
+            }
+            if (clientId == null) {
+                 System.out.println("WebSocket: WEB Client (User: " + username + ") đã ngắt kết nối.");
+            }
         }
     }
-
     @Override
+    @Transactional // Giữ Transactional ở đây là ổn
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         
         try {
-            // 1. Đọc tin nhắn JSON
-            Map<String, String> msg = objectMapper.readValue(payload, Map.class);
-            String type = msg.get("type");
+            // Dùng Map<String, Object> để linh hoạt
+            Map<String, Object> msg = objectMapper.readValue(payload, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+            String type = (String) msg.get("type");
+
             if ("AUTH".equals(type)) {
-                
-                // Nếu session này đã xác thực rồi thì bỏ qua
                 if (userBySessionId.containsKey(session.getId())) return; 
 
-                String token = msg.get("token");
+                String token = (String) msg.get("token");
                 if (token != null && tokenProvider.validateToken(token)) {
-                    // 3. Token hợp lệ -> Lấy username và LƯU LẠI
                     String username = tokenProvider.getUsernameFromJWT(token);
                     
+                    // --- SỬA LOGIC TÌM KIẾM ---
+                    
+                    // 1. Lưu session vào các map chung
                     Set<WebSocketSession> userSessions = sessionsByUsername.computeIfAbsent(
                             username, k -> Collections.newSetFromMap(new ConcurrentHashMap<>())
                         );
                     userSessions.add(session);
                     userBySessionId.put(session.getId(), username);
+
+                    String clientType = (String) msg.get("clientType");
                     
-                    System.out.println("WebSocket: User '" + username + "' đã xác thực thành công.");
+                    if ("APP".equals(clientType)) {
+                        String machineId = (String) msg.get("machineId");
+                        if (machineId == null) {
+                            session.close(CloseStatus.POLICY_VIOLATION.withReason("APP Client phải gửi machineId"));
+                            return;
+                        }
+
+                        // 2. Tìm UserEntity
+                        Optional<UserEntity> userOpt = userRepository.findByUsername(username);
+                        if (userOpt.isEmpty()) {
+                            session.close(CloseStatus.POLICY_VIOLATION.withReason("User không tồn tại"));
+                            return;
+                        }
+
+                        // 3. Tìm ClientEntity CỤ THỂ
+                        Optional<ClientEntity> clientOpt = clientRepository.findByMachineIdAndUser(machineId, userOpt.get());
+
+                        if (clientOpt.isPresent()) {
+                            ClientEntity client = clientOpt.get();
+                            client.setStatus(STATUS_ONLINE);
+                            clientRepository.save(client);
+
+                            // 4. Lưu session này là của client_id nào
+                            clientIdBySessionId.put(session.getId(), client.getId());
+                            
+                            System.out.println("WebSocket: APP Client '" + client.getClientName() + "' (ID: " + client.getId() + ") đã xác thực và set ONLINE.");
+                        } else {
+                            System.err.println("LỖI: APP Client (user: " + username + ") đã xác thực nhưng không tìm thấy Client với machineId: " + machineId);
+                        }
+
+                    } else {
+                        System.out.println("WebSocket: WEB Client '" + username + "' đã xác thực.");
+                    }
+                    
                     session.sendMessage(new TextMessage("{\"type\": \"AUTH_SUCCESS\"}"));
+                
                 } else {
-                    // Token không hợp lệ -> Đóng kết nối
                     session.close(CloseStatus.POLICY_VIOLATION.withReason("Token không hợp lệ"));
                 }
-            } else {
-                // Xử lý các tin nhắn khác nếu cần
-                System.out.println("WebSocket: Nhận được tin nhắn khác từ " + userBySessionId.get(session.getId()) + ": " + payload);
-            }
-
+            } 
         } catch (Exception e) {
-            System.err.println("Lỗi xử lý tin nhắn WebSocket: " + e.getMessage());
-            session.close(CloseStatus.BAD_DATA.withReason("Tin nhắn không đúng định dạng JSON"));
+            // Lỗi này chính là lỗi bạn gặp (IncorrectResultSizeDataAccessException)
+            // Giờ nó sẽ không xảy ra nữa, nhưng chúng ta vẫn bắt các lỗi khác
+            System.err.println("Lỗi xử lý logic WebSocket cho type 'AUTH': " + e.getMessage());
+            e.printStackTrace(); 
+            // Không đóng kết nối vội, có thể chỉ là lỗi parse
         }
     }
 
-    /**
-     * Hàm quan trọng: Gửi tin nhắn TỪ Server XUỐNG một user cụ thể
-     * HÀM NÀY BÂY GIỜ ĐÃ CHẠY ĐÚNG!
-     */
     public void sendMessageToUser(String username, String jsonMessage) {
-        // 1. Lấy TẤT CẢ sessions của user
         Set<WebSocketSession> userSessions = sessionsByUsername.get(username);
         
         if (userSessions == null || userSessions.isEmpty()) {

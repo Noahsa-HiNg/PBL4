@@ -24,6 +24,8 @@ public interface CameraRepository extends JpaRepository<CameraEntity, Integer> {
 	Optional<CameraEntity> findByIpAddressAndUsername(String ipAddress, String username);
 	Optional<CameraEntity> findByIpAddressAndClient_Id(String ipAddress, int clientId);
 	Optional<CameraEntity> findByIdAndClientUserId(int cameraId, int userId);
-	
+	@Modifying // Bắt buộc vì đây là câu lệnh thay đổi dữ liệu (DELETE/UPDATE)
+    @Query("DELETE FROM CameraEntity c WHERE c.id = :cameraId")
+    void deleteCameraByIdCustom(@Param("cameraId") int cameraId);
 
 }

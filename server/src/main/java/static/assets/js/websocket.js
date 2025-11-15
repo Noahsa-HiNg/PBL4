@@ -17,7 +17,8 @@ function connectWebSocket() {
         // BƯỚC 1: Gửi Token xác thực
         const authMessage = JSON.stringify({
             type: "AUTH",
-            token: token
+            token: token,
+			clientType: "WEB"
         });
         socket.send(authMessage);
     };
@@ -80,9 +81,8 @@ function handleWebSocketMessage(jsonPayload) {
                 
             case 'CLIENT_STATUS_UPDATE':
                 console.log("WebSocket: Cấu hình Client đã được cập nhật từ Server.");
-                // Tải lại bảng Client để hiển thị thay đổi
                 if (window.location.pathname.includes('client_setup.html')) {
-                    loadClients(); 
+                    window.clientUpdateCallback();
                 }
                 break;
                 

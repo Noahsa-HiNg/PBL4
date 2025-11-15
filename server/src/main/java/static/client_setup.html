@@ -106,8 +106,15 @@
         const modalForm = document.getElementById('client-form');
         const closeModalBtn = document.getElementById('close-modal-btn');
 
-        document.addEventListener('DOMContentLoaded', loadClients);
-
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClients();
+            
+            // --- TÍCH HỢP CALLBACK WEBSOCKET ---
+            // Đăng ký hàm loadClients() để file websocket.js có thể gọi
+            // khi nhận được tin nhắn 'CLIENT_STATUS_UPDATE'
+            window.clientUpdateCallback = loadClients;
+        });
+		
         async function loadClients() {
             try {
                 const clients = await getClientList(); 
@@ -147,6 +154,7 @@
                 tableBody.innerHTML = `<tr><td colspan="5">Lỗi tải clients: ${error.message}</td></tr>`;
             }
         }
+        
 
         // Mở Modal để chỉnh sửa
         async function openEditModal(id) {

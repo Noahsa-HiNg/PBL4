@@ -76,34 +76,25 @@ public class ImageController {
         String currentUsername = authentication.getName();
         try {
         	Timestamp capturedAt = new Timestamp(capturedAtMillis);
-            // Service returns DTO with the relative path stored
             Image savedDto = imageService.store(file, cameraId, capturedAt);
-            
-            // Build the full, accessible URL using the relative path
             savedDto.setFilePath(buildFileUrl1(savedDto.getFilePath())); 
             if (webSocketHandler != null && !"anonymousUser".equals(currentUsername)) {
                 String jsonMessage = String.format(
                     "{\"type\": \"NEW_SNAPSHOT\", \"message\": \"Ảnh mới đã được tải lên.\", \"image\": %s}",
-                    // Nếu dùng ObjectMapper: objectMapper.writeValueAsString(savedDto) 
                     "{\"id\":" + savedDto.getId() + ", \"camera_id\":" + savedDto.getCameraId() + ", \"url\":\"" + savedDto.getFilePath() + "\"}"
                 );
                 webSocketHandler.sendMessageToUser(currentUsername, jsonMessage);
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
-        } catch (EntityNotFoundException e) { // Catch specific error from service
+        } catch (EntityNotFoundException e) { 
              return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-             // Log the exception details for debugging
              System.err.println("Upload failed: " + e.getMessage());
              e.printStackTrace(); 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not upload file: " + e.getMessage());
         }
     }
 
-    /**
-     * Gets a paginated list of images, optionally filtered by camera ID.
-     * Builds full URLs for each image in the current page.
-     */
     @GetMapping
     public ResponseEntity<Page<Image>> getImages(
             @RequestParam(required = false) Integer cameraId,
@@ -151,26 +142,23 @@ public class ImageController {
         @RequestParam("path") String relativePath 
     ) {
         logger.info("ImageController: Nhận yêu cầu xem ảnh: '{}'", relativePath);
-        // In thêm thông tin xác thực (nếu cần debug quyền)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         logger.debug("ImageController: Thông tin xác thực hiện tại: {}", authentication);
         try {
-            // Combine the root storage location with the relative path
             Path filePath = fileStorageLocation.resolve(relativePath).normalize();
             System.out.println("DEBUG: Đang cố gắng truy cập file: " + filePath.toString());
-            
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
                 logger.debug("ImageController: Tìm thấy và trả về file: {}", filePath.toString());
-                String contentType = determineContentType(filePath); // Giữ nguyên hàm này của bạn
+                String contentType = determineContentType(filePath); 
 
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             } else {
-                // Use a more specific exception if needed
+             
                 throw new FileNotFoundException("File not found: " + relativePath); 
             }
         } catch (MalformedURLException e) {
@@ -179,7 +167,7 @@ public class ImageController {
         } catch (FileNotFoundException e) {
              System.err.println(e.getMessage());
             return ResponseEntity.notFound().build();
-        } catch (Exception e) { // Catch other potential IO errors
+        } catch (Exception e) { 
              System.err.println("Error reading file: " + relativePath + " - " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -189,8 +177,8 @@ public class ImageController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) { 
         try {
-            imageService.deleteImage(id); // Service handles DB and file deletion
-            return ResponseEntity.noContent().build(); // 204 No Content is standard for successful DELETE
+            imageService.deleteImage(id); 
+            return ResponseEntity.noContent().build(); 
         } catch (EntityNotFoundException e) {
              return ResponseEntity.notFound().build();
         } catch (Exception e) {
@@ -201,19 +189,17 @@ public class ImageController {
     }
     @DeleteMapping
     public ResponseEntity<?> deleteBatchImages(@RequestBody BatchDeleteRequest deleteRequest) {
-        
-        // 1. Lấy thông tin user đang đăng nhập
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
-        
-        // (Kiểm tra đăng nhập - tùy chọn nhưng nên có)
+
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(currentUsername)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                                  .body(Map.of("message", "Bạn cần đăng nhập để thực hiện việc này.")); 
         }
 
         try {
-            // 2. Lấy danh sách ID từ request
+ 
             List<Long> idsToDelete = deleteRequest.getPhotoIds();
             
             if (idsToDelete == null || idsToDelete.isEmpty()) {
@@ -230,7 +216,6 @@ public class ImageController {
                                  .body(Map.of("message", "Không có quyền xóa một hoặc nhiều ảnh đã chọn."));
         
         } catch (Exception e) {
-            // Bắt các lỗi chung khác
             System.err.println("Lỗi khi xóa hàng loạt: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -238,25 +223,7 @@ public class ImageController {
         }
     }
 
-    /**
-     * Builds the full, accessible URL for an image given its relative path.
-     */
-    private String buildFileUrl(String relativePath) {
-        if (relativePath == null || relativePath.isBlank()) {
-            return null; // Or return a default placeholder image URL
-        }
-        // Ensure forward slashes for URL compatibility
-        String formattedPath = relativePath.replace("\\", "/"); 
-        
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/images/view/") // Base path for the getImage endpoint
-                .path(formattedPath)       // Append the relative path
-                .toUriString();
-    }
-    
-    /**
-     * Simple helper to determine content type based on file extension.
-     */
+  
      private String determineContentType(Path path) {
          String filename = path.getFileName().toString().toLowerCase();
          if (filename.endsWith(".png")) {
@@ -264,7 +231,6 @@ public class ImageController {
          } else if (filename.endsWith(".gif")) {
              return MediaType.IMAGE_GIF_VALUE;
          } else {
-             // Default to JPEG for .jpg, .jpeg, or unknown
              return MediaType.IMAGE_JPEG_VALUE; 
          }
      }

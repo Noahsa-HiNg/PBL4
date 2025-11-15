@@ -1,19 +1,23 @@
 package com.pbl4.server.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.dto.AddCameraRequest;
 import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.dto.UpdateCameraActiveRequest;
 import com.pbl4.server.service.CameraService;
 import com.pbl4.server.service.CameraService.ResourceNotFoundException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pbl4.common.model.Camera;
 import com.pbl4.server.service.CameraService;
 import com.pbl4.server.service.UserService; // BỔ SUNG để lấy User ID
+import com.pbl4.server.websocket.MyWebSocketHandler;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication; // BỔ SUNG
@@ -29,7 +33,11 @@ public class CameraController {
 
     private final CameraService cameraService;
     private final UserService userService;
-
+    @Autowired
+    private MyWebSocketHandler webSocketHandler;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     public CameraController(CameraService cameraService, UserService userService) {
         this.cameraService = cameraService;
         this.userService = userService;
@@ -139,6 +147,7 @@ public class CameraController {
 //            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
 //        }
 //    }
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCamera(@PathVariable int id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -149,14 +158,40 @@ public class CameraController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated."));
         }
 
+        String usernameToNotify; // Biến để giữ username
+
         try {
-            cameraService.deleteCamera(id, currentUserId);
-            return ResponseEntity.noContent().build();
+            // --- Logic CSDL ---
+            // GỌI HÀM SERVICE ĐÃ SỬA:
+            usernameToNotify = cameraService.deleteCamera(id, currentUserId);
+            // Nếu dòng trên chạy xong, CSDL ĐÃ ĐƯỢC COMMIT (xóa thành công)
             
         } catch (EntityNotFoundException e) {
+            // Lỗi quyền hoặc không tìm thấy
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error deleting camera: " + e.getMessage()));
+            // Bất kỳ lỗi CSDL nào khác (ví dụ: IOException từ imageService)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error during database operation: " + e.getMessage()));
         }
+
+        // --- Logic Mạng (WebSocket) ---
+        // Chỉ chạy nếu CSDL đã xóa thành công
+//        if (usernameToNotify != null) {
+//            try {
+//                Map<String, Object> msg = Map.of(
+//                    "type", "CAMERA_DELETED",
+//                    "id", id
+//                );
+//                String json = objectMapper.writeValueAsString(msg);
+//                webSocketHandler.sendMessageToUser(usernameToNotify, json);
+//            
+//            } catch (Exception wsError) {
+//                // Lỗi WebSocket không làm ảnh hưởng đến kết quả DELETE
+//                System.err.println("Database delete OK, but WebSocket send failed: " + wsError.getMessage());
+//            }
+//        }
+        
+        // Trả về 204 No Content (Xóa thành công)
+        return ResponseEntity.noContent().build();
     }
 }

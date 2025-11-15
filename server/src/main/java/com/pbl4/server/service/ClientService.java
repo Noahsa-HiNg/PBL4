@@ -13,6 +13,7 @@ import com.pbl4.server.repository.UserRepository;
 
 import io.jsonwebtoken.lang.Collections;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Client; // DTO
@@ -24,16 +25,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.pbl4.server.entity.UserEntity;
-import com.pbl4.server.repository.UserRepository;@Service
+import com.pbl4.server.repository.UserRepository;
+@Service
+@Transactional
 public class ClientService {
 	
     private final ClientRepository clientRepository;
     private final ImageService imageService;
     private final UserRepository userRepository;
     private final CameraRepository cameraRepository;
-    private static final long SECONDS_IN_DAY = 86400;
-    private static final long MAX_PING_INTERVAL_SECONDS = 90000; // 1 ngày + 1 giờ
-    private static final long MIN_PING_INTERVAL_SECONDS = 30;
+//    private static final long SECONDS_IN_DAY = 86400;
+//    private static final long MAX_PING_INTERVAL_SECONDS = 90000; // 1 ngày + 1 giờ
+//    private static final long MIN_PING_INTERVAL_SECONDS = 30;
     public ClientService(ClientRepository clientRepository, UserRepository userRepository,CameraRepository cameraRepository,ImageService imageService) {
 
         this.clientRepository = clientRepository;
@@ -55,7 +58,7 @@ public class ClientService {
             // ----- TRƯỜNG HỢP 1: Client ĐÃ TỒN TẠI -----
             ClientEntity client = existingClientOpt.get();
             client.setIpAddress(remoteIpAddress);       // Cập nhật IP hiện tại
-            client.setStatus("online");                 // Đánh dấu là đang online
+            client.setStatus("ACTIVE");                 // Đánh dấu là đang online
             client.setLastHeartbeat(Timestamp.from(Instant.now())); // Cập nhật thời gian kết nối cuối
             client.setClientName(request.getClientName()); // Cập nhật tên nếu client có đổi
             clientRepository.save(client);              // Lưu thay đổi vào DB
@@ -78,7 +81,7 @@ public class ClientService {
             newClient.setIpAddress(remoteIpAddress);      // IP hiện tại
 
             // Thiết lập các giá trị mặc định theo CSDL
-            newClient.setStatus("online");                // Trạng thái ban đầu
+            newClient.setStatus("ACTIVE");                // Trạng thái ban đầu
             newClient.setImageWidth(1280);                // Giá trị mặc định
             newClient.setImageHeight(720);                // Giá trị mặc định
             newClient.setCaptureIntervalSeconds(5);       // Giá trị mặc định
@@ -235,23 +238,23 @@ public class ClientService {
 //            clientRepository.save(client);
 //        });
 //    }
-    public long calculateDynamicPingInterval(int clientId) {
-        ClientEntity client = clientRepository.findById(clientId).orElse(null);
-        if (client == null ||  client.getCaptureIntervalSeconds() <= 0) {
-            return 180; 
-        }
-
-        long captureInterval = (long) client.getCaptureIntervalSeconds();
-        long calculatedInterval;
-
-        if (captureInterval > SECONDS_IN_DAY) {
-            calculatedInterval = MAX_PING_INTERVAL_SECONDS;
-        } else {
-            calculatedInterval = captureInterval * 2;
-        }
-
-        return Math.max(calculatedInterval, MIN_PING_INTERVAL_SECONDS);
-    }
+//    public long calculateDynamicPingInterval(int clientId) {
+//        ClientEntity client = clientRepository.findById(clientId).orElse(null);
+//        if (client == null ||  client.getCaptureIntervalSeconds() <= 0) {
+//            return 180; 
+//        }
+//
+//        long captureInterval = (long) client.getCaptureIntervalSeconds();
+//        long calculatedInterval;
+//
+//        if (captureInterval > SECONDS_IN_DAY) {
+//            calculatedInterval = MAX_PING_INTERVAL_SECONDS;
+//        } else {
+//            calculatedInterval = captureInterval * 2;
+//        }
+//
+//        return Math.max(calculatedInterval, MIN_PING_INTERVAL_SECONDS);
+//    }
     public void setClientOfflineAndTurnOffCameras(int clientId) {
         clientRepository.findById(clientId).ifPresent(client -> {
             cameraRepository.updateAllByClientId(clientId, false); 
