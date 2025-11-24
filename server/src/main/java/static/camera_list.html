@@ -101,9 +101,9 @@
                     const liveStreamUrl = `stream.html?cameraId=${camera.id}`; 
 
                     const cameraCardHTML = `
-                        <a href="${liveStreamUrl}" class="camera-link-card">
+                        <a href="${liveStreamUrl}" class="camera-link-card" data-camera-id="${camera.id}">
                             <div class="card"> 
-                                <img src="/placeholder-live.jpg" alt="${camera.cameraName} Feed">
+                                <img id="camera-image-${camera.id}" src="/placeholder-live.jpg" alt="${camera.cameraName} Feed">
                                 <div class="card-content">
                                     <div>
                                         <strong>${camera.cameraName}</strong>
@@ -117,6 +117,11 @@
                     cameraGrid.insertAdjacentHTML('beforeend', cameraCardHTML);
                 });
 
+                // After all cards are rendered, load images asynchronously
+                cameras.forEach(camera => {
+                    loadCameraImage(camera.id);
+                });
+
             } catch (error) {
                 console.error('Lỗi khi tải camera theo Client ID:', error);
                 
@@ -127,6 +132,30 @@
                         ${error.message}
                     </p>
                 `;
+            }
+        }
+
+        async function loadCameraImage(cameraId) {
+            const imgElement = document.getElementById(`camera-image-${cameraId}`);
+            if (!imgElement) return;
+
+            try {
+                // Gọi getImageList với sort là 'capturedAt,desc' để lấy ảnh gần nhất
+                const imageData = await getImageList(0, 1, cameraId, null, null, 'capturedAt,desc'); 
+                if (imageData && imageData.content && imageData.content.length > 0) {
+                    const latestImage = imageData.content[0];
+                    // Sử dụng latestImage.filePath thay vì latestImage.imageUrl
+                    if (latestImage.filePath) {
+                        imgElement.src = latestImage.filePath;
+                    } else {
+                        console.log(`Ảnh gần nhất cho camera ${cameraId} không có URL hợp lệ (filePath bị rỗng). Sử dụng ảnh giữ chỗ.`);
+                    }
+                } else {
+                    console.log(`Không tìm thấy ảnh nào cho camera ${cameraId}. Sử dụng ảnh giữ chỗ.`);
+                }
+            } catch (error) {
+                console.error(`Lỗi khi tải ảnh cho camera ${cameraId}:`, error);
+                // Keep placeholder image on error
             }
         }
     </script>
