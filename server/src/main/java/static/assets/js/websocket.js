@@ -76,6 +76,9 @@ function handleWebSocketMessage(jsonPayload) {
                     if (typeof window.snapshotUpdateCallback === 'function') {
                         window.snapshotUpdateCallback(); 
                     }
+                } else if (typeof window.webSocketMessageCallback === 'function') {
+                    // Gọi callback chung nếu nó tồn tại
+                    window.webSocketMessageCallback(message);
                 }
                 break;
                 

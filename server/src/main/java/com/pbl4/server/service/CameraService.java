@@ -310,6 +310,19 @@ public List<Camera> getCamerasByClientId(int clientId, Long currentUserId) {
         
         // KHÔNG gửi WebSocket ở đây
     }
- 
+    public Optional<Camera> findById(int id) {
+        Optional<CameraEntity> entityOpt = cameraRepository.findById(id);
+        return entityOpt.map(entity -> {
+            Camera model = new Camera();
+            model.setId(entity.getId());
+            model.setCameraName(entity.getCameraName());
+            model.setIpAddress(entity.getIpAddress());
+            model.setActive(entity.isActive());
+            model.setOnvifUrl(entity.getOnvifUrl());
+        
+            
+            return model;
+        });
+    	}
 }
     

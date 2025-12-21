@@ -63,7 +63,7 @@
 </head>
 <body>
     <header class="app-header">
-        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <a href="live_feed.html" class="logo">HiAn</a>
         <nav>
             <a href="live_feed.html">Live Feed</a>
             <a href="client_setup.html">Client Setup</a>
@@ -129,12 +129,12 @@
                     const statusClass = camera.active ? '' : 'offline'; 
                     const statusTitle = camera.active ? 'Online' : 'Offline';
                     
-                    // Link đến trang xem stream chi tiết
-                    const liveStreamUrl = `stream.html?cameraId=${camera.id}`; 
+                    // Link đến trang thư viện ảnh chi tiết của camera
+                    const cameraGalleryUrl = `camera_gallery.html?cameraId=${camera.id}`; 
 
                     // Bọc toàn bộ .card bằng thẻ <a>
                     const cameraCardHTML = `
-                        <a href="${liveStreamUrl}" class="camera-link-card" data-camera-id="${camera.id}">
+                        <a href="${cameraGalleryUrl}" class="camera-link-card" data-camera-id="${camera.id}">
                             
                             <div class="card"> 
                                 <img id="camera-image-${camera.id}" src="/placeholder-live.jpg" alt="${camera.cameraName} Feed">

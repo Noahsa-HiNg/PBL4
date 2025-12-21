@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "Cameras")
 public class CameraEntity implements Serializable {
@@ -16,6 +18,7 @@ public class CameraEntity implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
+    @JsonIgnore
     private ClientEntity client;
 
     @Column(name = "camera_name", nullable = false)
@@ -40,6 +43,7 @@ public class CameraEntity implements Serializable {
     private Timestamp createdAt;
 
     @OneToMany(mappedBy = "camera", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @JsonIgnore
     private Set<ImageEntity> images;
     // --- Getters and Setters ---
     public int getId() { return id; }

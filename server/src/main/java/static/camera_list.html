@@ -34,7 +34,7 @@
 </head>
 <body>
     <header class="app-header">
-        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <a href="live_feed.html" class="logo">HiAn</a>
         <nav>
             <a href="live_feed.html">Live Feed</a>
             <a href="client_setup.html">Client Setup</a>
@@ -98,7 +98,7 @@
                 cameras.forEach(camera => {
                     const statusClass = camera.isActive ? '' : 'offline'; // Dùng 'isActive' hoặc 'active' tùy DTO
                     const statusTitle = camera.isActive ? 'Online' : 'Offline';
-                    const liveStreamUrl = `stream.html?cameraId=${camera.id}`; 
+                    const liveStreamUrl = `camera_gallery.html?cameraId=${camera.id}`; 
 
                     const cameraCardHTML = `
                         <a href="${liveStreamUrl}" class="camera-link-card" data-camera-id="${camera.id}">

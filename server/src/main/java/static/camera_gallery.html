@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư viện ảnh Camera - Hệ thống Giám sát</title>
+    
+    <link rel="stylesheet" href="assets/css/style.css"> 
+    
+    <style>
+        /* Thêm lại các style cần thiết cho card-grid và card vào đây */
+        /* Điều này là tạm thời nếu style.css bị revert, sau đó sẽ chuyển vào style.css */
+        .loading-placeholder {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-text-secondary);
+            grid-column: 1 / -1; /* Hiển thị toàn chiều rộng grid */
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background-color: var(--color-background-muted);
+            border-radius: var(--border-radius-main);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .card {
+            background-color: var(--color-background-main);
+            border-radius: var(--border-radius-main);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .card img {
+            width: 100%;
+            height: 180px; /* Chiều cao cố định cho ảnh */
+            object-fit: cover;
+            background-color: var(--color-gray-300);
+        }
+
+        .card-content {
+            padding: 1rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-content h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-primary);
+            font-size: 1.1rem;
+        }
+
+        .card-content p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <a href="live_feed.html" class="logo">HiAn</a>
+        <nav>
+            <a href="live_feed.html">Live Feed</a>
+            <a href="client_setup.html">Client Setup</a>
+            <a href="snapshot_management.html">Snapshot Management</a>
+            <a href="user_settings.html">Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title" id="camera-gallery-title">Thư viện ảnh Camera</h1>
+        
+        <div class="camera-info-card card">
+            <div class="card-content">
+                <p><strong>Tên Camera:</strong> <span id="camera-name"></span></p>
+                <p><strong>ID Camera:</strong> <span id="camera-id"></span></p>
+                <p><strong>Trạng thái:</strong> <span id="camera-status"></span></p>
+                <p><strong>Địa chỉ IP:</strong> <span id="camera-ip"></span></p>
+            </div>
+        </div>
+
+        <h2>Ảnh đã chụp:</h2>
+        <div class="card-grid" id="image-gallery-grid">
+            <p class="loading-placeholder">Đang tải ảnh...</p>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>© 2025 Surveillance System. All rights reserved.</span>
+        <nav>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+        </nav>
+    </footer>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/websocket.js"></script>
+
+    <script>
+        const imageGalleryGrid = document.getElementById('image-gallery-grid');
+        const cameraGalleryTitle = document.getElementById('camera-gallery-title');
+        const cameraNameSpan = document.getElementById('camera-name');
+        const cameraIdSpan = document.getElementById('camera-id');
+        const cameraStatusSpan = document.getElementById('camera-status');
+        const cameraIpSpan = document.getElementById('camera-ip');
+        
+        let currentCameraId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            currentCameraId = params.get('cameraId');
+
+            if (!currentCameraId) {
+                cameraGalleryTitle.textContent = "Lỗi: Không tìm thấy ID Camera.";
+                imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Không thể hiển thị thư viện ảnh.</p>';
+                return;
+            }
+
+            cameraGalleryTitle.textContent = `Thư viện ảnh của Camera ID: ${currentCameraId}`;
+            loadCameraDetails(currentCameraId);
+            loadCameraImages(currentCameraId);
+            setupWebSocketForCamera(currentCameraId);
+        });
+
+        async function loadCameraDetails(cameraId) {
+            try {
+                const cameraDetails = await getCameraById(cameraId);
+                if (cameraDetails) {
+                    cameraNameSpan.textContent = cameraDetails.cameraName || 'N/A';
+                    cameraIdSpan.textContent = cameraDetails.id || 'N/A';
+                    cameraStatusSpan.textContent = cameraDetails.active ? 'Online' : 'Offline';
+                    cameraStatusSpan.style.color = cameraDetails.active ? 'var(--color-green-success)' : 'var(--color-red-danger)';
+                    cameraIpSpan.textContent = cameraDetails.ipAddress || 'N/A';
+                }
+            } catch (error) {
+                console.error(`Lỗi khi tải chi tiết camera ID ${cameraId}:`, error);
+                cameraGalleryTitle.textContent = `Lỗi: Không thể tải thông tin Camera ID: ${cameraId}`; 
+            }
+        }
+
+        async function loadCameraImages(cameraId) {
+            imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Đang tải ảnh...</p>';
+            try {
+                // Lấy tất cả ảnh cho camera này, hoặc giới hạn số lượng nếu cần
+                const pageData = await getImageList(0, 100, cameraId, null, null, 'capturedAt,desc'); 
+
+                if (!pageData.content || pageData.content.length === 0) {
+                    imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Không có ảnh nào cho camera này.</p>';
+                    return;
+                }
+
+                imageGalleryGrid.innerHTML = '';
+                pageData.content.forEach(image => {
+                    addImageToGallery(image);
+                });
+
+            } catch (error) {
+                console.error(`Lỗi khi tải ảnh cho Camera ID ${cameraId}:`, error);
+                imageGalleryGrid.innerHTML = `<p class="loading-placeholder" style="color: var(--color-danger);">Không thể tải thư viện ảnh: ${error.message}</p>`;
+            }
+        }
+
+        function addImageToGallery(image) {
+            const timestamp = new Date(image.capturedAt).toLocaleString('vi-VN');
+            const cardHTML = `
+                <div class="card" data-id="${image.id}" data-src="${image.filePath}" data-camera="${image.cameraId}" data-time="${timestamp}">
+                    <img src="${image.filePath}" alt="Snapshot ${image.id}">
+                    <div class="card-content">
+                        <h3>Snapshot ID: ${image.id}</h3>
+                        <p>Camera: ${image.cameraId}</p>
+                        <p>Thời gian: ${timestamp}</p>
+                    </div>
+                </div>
+            `;
+            imageGalleryGrid.insertAdjacentHTML('afterbegin', cardHTML); // Thêm ảnh mới lên đầu
+        }
+
+        function setupWebSocketForCamera(cameraId) {
+            if (typeof connectWebSocket === 'function') {
+                connectWebSocket(); // Kết nối WebSocket chung
+                // Đăng ký callback để xử lý tin nhắn
+                window.webSocketMessageCallback = (message) => {
+                    try {
+                        const data = JSON.parse(message.body);
+                        // Kiểm tra xem đây có phải là ảnh mới cho camera hiện tại không
+                        if (data.type === 'NEW_SNAPSHOT' && data.cameraId === parseInt(cameraId)) {
+                            // Giả định data.snapshot chứa đủ thông tin ảnh (id, filePath, capturedAt, cameraId)
+                            addImageToGallery(data.snapshot);
+                        }
+                    } catch (e) {
+                        console.error('Lỗi phân tích cú pháp WebSocket message:', e);
+                    }
+                };
+            } else {
+                console.warn('WebSocket functionality not available.');
+            }
+        }
+    </script>
+</body>
+</html>

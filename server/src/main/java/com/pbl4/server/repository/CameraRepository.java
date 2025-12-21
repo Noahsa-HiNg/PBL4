@@ -2,6 +2,10 @@ package com.pbl4.server.repository;
 
 import com.pbl4.server.entity.CameraEntity;
 
+import pbl4.common.model.Camera;
+
+import java.util.Optional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -27,5 +31,8 @@ public interface CameraRepository extends JpaRepository<CameraEntity, Integer> {
 	@Modifying // Bắt buộc vì đây là câu lệnh thay đổi dữ liệu (DELETE/UPDATE)
     @Query("DELETE FROM CameraEntity c WHERE c.id = :cameraId")
     void deleteCameraByIdCustom(@Param("cameraId") int cameraId);
+	Optional<Camera> findById(Long id);
+	
+	
 
 }

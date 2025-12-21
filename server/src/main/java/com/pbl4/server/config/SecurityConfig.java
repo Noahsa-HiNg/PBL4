@@ -97,7 +97,8 @@ public class SecurityConfig {
             		        "/stream.html",
             		        "/assets/**", 
             		        "/admin/**",
-            		        "/camera_list.html"
+            		        "/camera_list.html",
+            		        "/camera_gallery.html"
             		        
             		    ).permitAll()
                 // Allow login, error pages, and static assets publicly
@@ -138,7 +139,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://192.168.1.24:8080") 
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://192.168.123.57:8080") 
                         //.allowedOrigins("**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") 
                         .allowedHeaders("*")

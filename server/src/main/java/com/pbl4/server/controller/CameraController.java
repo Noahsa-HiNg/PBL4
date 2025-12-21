@@ -24,6 +24,7 @@ import org.springframework.security.core.Authentication; // BỔ SUNG
 import org.springframework.security.core.context.SecurityContextHolder; // BỔ SUNG
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.pbl4.server.service.DashboardService;
@@ -47,7 +48,23 @@ public class CameraController {
     public ResponseEntity<Camera> createCamera(@RequestBody Camera camera) {
         return new ResponseEntity<>(cameraService.createCamera(camera), HttpStatus.CREATED);
     }
-
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getCameraById(@PathVariable int id) { // 1. Đã đổi Long -> Integer
+        // Giả sử cameraService.findById(id) trả về Optional<CameraEntity>
+        return cameraService.findById(id)
+            .map(camera -> {
+                // 2. Map thủ công sang Object khác để tránh lỗi JSON 100%
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", camera.getId());
+                response.put("cameraName", camera.getCameraName());
+                response.put("ipAddress", camera.getIpAddress());
+                response.put("active", camera.isActive());
+                response.put("onvifUrl", camera.getOnvifUrl());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            })
+            .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
     @GetMapping
     public ResponseEntity<List<Camera>> getAllCameras(
             @RequestParam(required = false) Integer clientId) {
@@ -173,6 +190,7 @@ public class CameraController {
             // Bất kỳ lỗi CSDL nào khác (ví dụ: IOException từ imageService)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error during database operation: " + e.getMessage()));
         }
+        
 
         // --- Logic Mạng (WebSocket) ---
         // Chỉ chạy nếu CSDL đã xóa thành công
