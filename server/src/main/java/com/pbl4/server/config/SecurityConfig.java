@@ -139,7 +139,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://192.168.123.57:8080") 
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://92.168.123.228:8080") 
                         //.allowedOrigins("**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") 
                         .allowedHeaders("*")

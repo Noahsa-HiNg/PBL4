@@ -3,9 +3,15 @@ package com.pbl4.server.service;
 import com.pbl4.server.repository.UserRepository;
 import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.repository.ImageRepository;
+import com.pbl4.server.dto.DailyImageStats;
+import com.pbl4.server.dto.UserRankingDto;
 import com.pbl4.server.repository.CameraRepository;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -65,5 +71,22 @@ public class DashboardService {
             "cameraId", (long) cameraId,
             "totalImages", totalImages
         );
+    }
+    public Map<String, Object> getSystemRankings(int limit) {
+        Pageable topLimit = PageRequest.of(0, limit);
+        List<UserRankingDto> topUsersByImages = userRepository.findTopUsersByImageCount(topLimit);
+        List<UserRankingDto> topUsersByCameras = userRepository.findTopUsersByCameraCount(topLimit);
+        long totalUserUploadedImages = topUsersByImages.stream()
+                .mapToLong(UserRankingDto::getValue)
+                .sum(); 
+
+        Map<String, Object> rankings = new HashMap<>();
+        rankings.put("topUsersByImages", topUsersByImages);
+        rankings.put("topUsersByCameras", topUsersByCameras);
+        
+        return rankings;
+    }
+    public List<DailyImageStats> getWeeklyChartData() {
+        return imageRepository.findLast7DaysStats();
     }
 }

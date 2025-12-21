@@ -3,78 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thư viện ảnh Camera - Hệ thống Giám sát</title>
+    <title>Thư viện Camera - Hệ thống Giám sát</title>
     
     <link rel="stylesheet" href="assets/css/style.css"> 
     
     <style>
-        /* Thêm lại các style cần thiết cho card-grid và card vào đây */
-        /* Điều này là tạm thời nếu style.css bị revert, sau đó sẽ chuyển vào style.css */
-        .loading-placeholder {
-            text-align: center;
-            padding: 2rem;
-            color: var(--color-text-secondary);
-            grid-column: 1 / -1; /* Hiển thị toàn chiều rộng grid */
-        }
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+        /* === STYLE CƠ BẢN (GIỮ NGUYÊN) === */
+        .camera-info-container {
+            background-color: var(--color-background-main, #fff);
             padding: 20px;
-            background-color: var(--color-background-muted);
-            border-radius: var(--border-radius-main);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .card {
-            background-color: var(--color-background-main);
-            border-radius: var(--border-radius-main);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
             display: flex;
-            flex-direction: column;
-            height: 100%;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            border-left: 5px solid var(--color-primary, #007bff);
         }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        .card img {
-            width: 100%;
-            height: 180px; /* Chiều cao cố định cho ảnh */
-            object-fit: cover;
-            background-color: var(--color-gray-300);
-        }
-
-        .card-content {
-            padding: 1rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
+        .info-item { margin-right: 20px; font-size: 0.95rem; }
+        
+        /* === THANH CÔNG CỤ XÓA (MỚI) === */
+        .selection-toolbar {
+            display: none; /* Ẩn mặc định, hiện khi có chọn ảnh */
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            align-items: center;
             justify-content: space-between;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .btn-delete-batch {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-delete-batch:hover { background-color: #c82333; }
+
+        /* === GIAO DIỆN LƯỚI CAMERA === */
+        .image-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            padding-bottom: 50px;
         }
 
-        .card-content h3 {
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-            color: var(--color-text-primary);
-            font-size: 1.1rem;
+        .gallery-item {
+            position: relative;
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .card-content p {
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+        .gallery-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        
+        /* Khi được chọn thì có viền xanh */
+        .gallery-item.selected {
+            border: 3px solid #007bff;
         }
 
-        .card-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 1rem;
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        .cam-checkbox {
+            position: absolute; top: 10px; left: 10px;
+            width: 20px; height: 20px;
+            cursor: pointer; z-index: 2;
+            transform: scale(1.2);
+        }
+
+        .cam-info-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            padding: 40px 12px 12px 12px; 
+            color: white;
+            display: flex; flex-direction: column;
+            pointer-events: none;
+        }
+
+        .cam-name-text { font-size: 14px; font-weight: bold; margin-bottom: 2px; text-shadow: 0 1px 2px black; }
+        .cam-time-text { font-size: 12px; opacity: 0.9; font-weight: normal; }
+
+        .loading-placeholder { grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666; }
+
+        /* === MODAL === */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.95); }
+        .modal-content { margin: auto; display: block; width: auto; max-width: 90%; max-height: 85vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 4px; }
+        .close-btn { position: absolute; top: 20px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
+        
+        /* Footer Modal chứa nút xóa */
+        .modal-footer-actions {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; align-items: center;
+            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 30px;
+        }
+        .modal-text { color: #ccc; margin-right: 10px; }
+        .btn-modal-delete {
+            background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;
         }
     </style>
 </head>
@@ -90,30 +133,38 @@
     </header>
 
     <main>
-        <h1 class="page-title" id="camera-gallery-title">Thư viện ảnh Camera</h1>
+        <h1 class="page-title" id="camera-gallery-title">Thư viện ảnh</h1>
         
-        <div class="camera-info-card card">
-            <div class="card-content">
-                <p><strong>Tên Camera:</strong> <span id="camera-name"></span></p>
-                <p><strong>ID Camera:</strong> <span id="camera-id"></span></p>
-                <p><strong>Trạng thái:</strong> <span id="camera-status"></span></p>
-                <p><strong>Địa chỉ IP:</strong> <span id="camera-ip"></span></p>
-            </div>
+        <div class="camera-info-container">
+            <div class="info-item"><strong>Tên:</strong> <span id="camera-name">Loading...</span></div>
+            <div class="info-item"><strong>ID:</strong> <span id="camera-id">...</span></div>
+            <div class="info-item"><strong>IP:</strong> <span id="camera-ip">...</span></div>
+            <div class="info-item"><strong>Trạng thái:</strong> <span id="camera-status">...</span></div>
         </div>
 
-        <h2>Ảnh đã chụp:</h2>
-        <div class="card-grid" id="image-gallery-grid">
+        <div class="selection-toolbar" id="selection-toolbar">
+            <span id="selection-count">Đã chọn 0 ảnh</span>
+            <button class="btn-delete-batch" id="btn-delete-batch">Xóa các mục đã chọn</button>
+        </div>
+
+        <h3>Ảnh gần đây</h3>
+        <div class="image-gallery-grid" id="image-gallery-grid">
             <p class="loading-placeholder">Đang tải ảnh...</p>
         </div>
     </main>
 
+    <div id="image-modal" class="modal">
+        <span class="close-btn">&times;</span>
+        <img class="modal-content" id="modal-img">
+        
+        <div class="modal-footer-actions">
+            <div class="modal-text" id="modal-caption"></div>
+            <button class="btn-modal-delete" id="btn-modal-delete">Xóa ảnh này</button>
+        </div>
+    </div>
+
     <footer class="app-footer">
-        <span>© 2025 Surveillance System. All rights reserved.</span>
-        <nav>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Contact Us</a>
-        </nav>
+        <span>© 2025 Surveillance System</span>
     </footer>
 
     <script src="assets/js/config.js"></script>
@@ -121,14 +172,27 @@
     <script src="assets/js/websocket.js"></script>
 
     <script>
+        // DOM Elements
         const imageGalleryGrid = document.getElementById('image-gallery-grid');
         const cameraGalleryTitle = document.getElementById('camera-gallery-title');
-        const cameraNameSpan = document.getElementById('camera-name');
-        const cameraIdSpan = document.getElementById('camera-id');
-        const cameraStatusSpan = document.getElementById('camera-status');
-        const cameraIpSpan = document.getElementById('camera-ip');
         
+        // Toolbar Elements
+        const selectionToolbar = document.getElementById('selection-toolbar');
+        const selectionCountSpan = document.getElementById('selection-count');
+        const btnDeleteBatch = document.getElementById('btn-delete-batch');
+
+        // Modal Elements
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-img');
+        const modalCaption = document.getElementById('modal-caption');
+        const closeModalBtn = document.querySelector('.close-btn');
+        const btnModalDelete = document.getElementById('btn-modal-delete');
+
+        // State
         let currentCameraId = null;
+        let currentCameraName = "Camera";
+        let selectedImageIds = new Set(); // Lưu danh sách ID ảnh đã chọn
+        let currentViewingImageId = null; // ID ảnh đang xem trong modal
 
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
@@ -136,87 +200,215 @@
 
             if (!currentCameraId) {
                 cameraGalleryTitle.textContent = "Lỗi: Không tìm thấy ID Camera.";
-                imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Không thể hiển thị thư viện ảnh.</p>';
+                imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Thiếu tham số ID.</p>';
                 return;
             }
 
-            cameraGalleryTitle.textContent = `Thư viện ảnh của Camera ID: ${currentCameraId}`;
             loadCameraDetails(currentCameraId);
             loadCameraImages(currentCameraId);
             setupWebSocketForCamera(currentCameraId);
+            
+            // Setup sự kiện
+            setupGridEvents();
+            setupModalEvents();
+            setupDeleteEvents();
         });
 
+        // 1. TẢI THÔNG TIN CAMERA
         async function loadCameraDetails(cameraId) {
             try {
-                const cameraDetails = await getCameraById(cameraId);
-                if (cameraDetails) {
-                    cameraNameSpan.textContent = cameraDetails.cameraName || 'N/A';
-                    cameraIdSpan.textContent = cameraDetails.id || 'N/A';
-                    cameraStatusSpan.textContent = cameraDetails.active ? 'Online' : 'Offline';
-                    cameraStatusSpan.style.color = cameraDetails.active ? 'var(--color-green-success)' : 'var(--color-red-danger)';
-                    cameraIpSpan.textContent = cameraDetails.ipAddress || 'N/A';
+                const cam = await getCameraById(cameraId);
+                if (cam) {
+                    currentCameraName = cam.cameraName || `Cam ${cameraId}`;
+                    cameraGalleryTitle.textContent = `Thư viện: ${cam.cameraName}`;
+                    document.getElementById('camera-name').textContent = cam.cameraName;
+                    document.getElementById('camera-id').textContent = cam.id;
+                    document.getElementById('camera-ip').textContent = cam.ipAddress || 'N/A';
+                    const statusSpan = document.getElementById('camera-status');
+                    statusSpan.textContent = cam.active ? 'Online' : 'Offline';
+                    statusSpan.style.color = cam.active ? 'green' : 'red';
+                    statusSpan.style.fontWeight = 'bold';
                 }
             } catch (error) {
-                console.error(`Lỗi khi tải chi tiết camera ID ${cameraId}:`, error);
-                cameraGalleryTitle.textContent = `Lỗi: Không thể tải thông tin Camera ID: ${cameraId}`; 
+                console.error("Lỗi tải thông tin camera:", error);
             }
         }
 
+        // 2. TẢI ẢNH
         async function loadCameraImages(cameraId) {
             imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Đang tải ảnh...</p>';
             try {
-                // Lấy tất cả ảnh cho camera này, hoặc giới hạn số lượng nếu cần
-                const pageData = await getImageList(0, 100, cameraId, null, null, 'capturedAt,desc'); 
+                const pageData = await getImageList(0, 50, cameraId, null, null, 'capturedAt,desc'); 
 
                 if (!pageData.content || pageData.content.length === 0) {
-                    imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Không có ảnh nào cho camera này.</p>';
+                    imageGalleryGrid.innerHTML = '<p class="loading-placeholder">Chưa có ảnh nào.</p>';
                     return;
                 }
 
-                imageGalleryGrid.innerHTML = '';
+                imageGalleryGrid.innerHTML = ''; 
                 pageData.content.forEach(image => {
-                    addImageToGallery(image);
+                    addImageToGallery(image, false);
                 });
 
             } catch (error) {
-                console.error(`Lỗi khi tải ảnh cho Camera ID ${cameraId}:`, error);
-                imageGalleryGrid.innerHTML = `<p class="loading-placeholder" style="color: var(--color-danger);">Không thể tải thư viện ảnh: ${error.message}</p>`;
+                console.error("Lỗi tải ảnh:", error);
+                imageGalleryGrid.innerHTML = `<p class="loading-placeholder" style="color:red">Lỗi: ${error.message}</p>`;
             }
         }
 
-        function addImageToGallery(image) {
-            const timestamp = new Date(image.capturedAt).toLocaleString('vi-VN');
-            const cardHTML = `
-                <div class="card" data-id="${image.id}" data-src="${image.filePath}" data-camera="${image.cameraId}" data-time="${timestamp}">
-                    <img src="${image.filePath}" alt="Snapshot ${image.id}">
-                    <div class="card-content">
-                        <h3>Snapshot ID: ${image.id}</h3>
-                        <p>Camera: ${image.cameraId}</p>
-                        <p>Thời gian: ${timestamp}</p>
+        // 3. RENDER HTML CHO MỘT ẢNH
+        function addImageToGallery(image, isNewFromSocket = false) {
+            const dateObj = new Date(image.capturedAt);
+            const timeStr = dateObj.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+            const fullDateStr = dateObj.toLocaleDateString('vi-VN');
+
+            const itemHTML = `
+                <div class="gallery-item" id="img-card-${image.id}"
+                     data-src="${image.filePath}" 
+                     data-time="${timeStr} - ${fullDateStr}"
+                     data-id="${image.id}">
+                    
+                    <img src="${image.filePath}" loading="lazy" alt="ID ${image.id}">
+                    
+                    <input type="checkbox" class="cam-checkbox" data-id="${image.id}">
+                    
+                    <div class="cam-info-overlay">
+                        <span class="cam-name-text">${currentCameraName}</span>
+                        <span class="cam-time-text">${timeStr} · ${fullDateStr}</span>
                     </div>
                 </div>
             `;
-            imageGalleryGrid.insertAdjacentHTML('afterbegin', cardHTML); // Thêm ảnh mới lên đầu
+
+            if (isNewFromSocket) {
+                imageGalleryGrid.insertAdjacentHTML('afterbegin', itemHTML);
+            } else {
+                imageGalleryGrid.insertAdjacentHTML('beforeend', itemHTML);
+            }
         }
 
+        // 4. SỰ KIỆN CLICK TRÊN GRID (Xử lý Chọn & Xem)
+        function setupGridEvents() {
+            imageGalleryGrid.addEventListener('click', (e) => {
+                // A. Xử lý Checkbox (Chọn ảnh)
+                if (e.target.classList.contains('cam-checkbox')) {
+                    e.stopPropagation(); // Ngăn mở modal
+                    const id = e.target.dataset.id;
+                    const card = document.getElementById(`img-card-${id}`);
+
+                    if (e.target.checked) {
+                        selectedImageIds.add(id);
+                        card.classList.add('selected');
+                    } else {
+                        selectedImageIds.delete(id);
+                        card.classList.remove('selected');
+                    }
+                    updateSelectionToolbar();
+                    return;
+                }
+
+                // B. Xử lý Click vào ảnh (Mở Modal)
+                const item = e.target.closest('.gallery-item');
+                if (item) {
+                    const src = item.dataset.src;
+                    const time = item.dataset.time;
+                    currentViewingImageId = item.dataset.id; // Lưu ID để xóa trong modal
+
+                    modal.style.display = "block";
+                    modalImg.src = src;
+                    modalCaption.innerHTML = `Time: ${time}`;
+                }
+            });
+        }
+
+        // 5. CẬP NHẬT TOOLBAR
+        function updateSelectionToolbar() {
+            const count = selectedImageIds.size;
+            if (count > 0) {
+                selectionToolbar.style.display = 'flex';
+                selectionCountSpan.textContent = `Đã chọn ${count} ảnh`;
+            } else {
+                selectionToolbar.style.display = 'none';
+            }
+        }
+
+        // 6. XỬ LÝ XÓA
+        function setupDeleteEvents() {
+            // Xóa hàng loạt
+            btnDeleteBatch.addEventListener('click', async () => {
+                const count = selectedImageIds.size;
+                if (count === 0) return;
+                
+                if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn ${count} ảnh đã chọn?`)) return;
+
+                const idsToDelete = Array.from(selectedImageIds);
+                let successCount = 0;
+
+                // Loop xóa từng ảnh (hoặc dùng API batch nếu có)
+                for (const id of idsToDelete) {
+                    try {
+                        await deleteImage(id); // Gọi hàm từ api.js
+                        // Xóa khỏi giao diện
+                        const card = document.getElementById(`img-card-${id}`);
+                        if (card) card.remove();
+                        selectedImageIds.delete(id);
+                        successCount++;
+                    } catch (error) {
+                        console.error(`Lỗi xóa ảnh ${id}:`, error);
+                    }
+                }
+
+                alert(`Đã xóa thành công ${successCount} ảnh.`);
+                updateSelectionToolbar();
+            });
+
+            // Xóa trong Modal
+            btnModalDelete.addEventListener('click', async () => {
+                if (!currentViewingImageId) return;
+                if (!confirm("Bạn có chắc muốn xóa ảnh đang xem này không?")) return;
+
+                try {
+                    await deleteImage(currentViewingImageId);
+                    
+                    // Xóa khỏi giao diện lưới
+                    const card = document.getElementById(`img-card-${currentViewingImageId}`);
+                    if (card) card.remove();
+                    
+                    // Xóa khỏi tập hợp selected nếu có
+                    selectedImageIds.delete(currentViewingImageId.toString());
+                    updateSelectionToolbar();
+
+                    // Đóng modal
+                    modal.style.display = "none";
+                    alert("Đã xóa ảnh thành công.");
+
+                } catch (error) {
+                    alert("Lỗi khi xóa ảnh: " + error.message);
+                }
+            });
+        }
+
+        // 7. SỰ KIỆN MODAL
+        function setupModalEvents() {
+            closeModalBtn.onclick = () => { modal.style.display = "none"; }
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.style.display = "none";
+            }
+        }
+
+        // 8. WEBSOCKET
         function setupWebSocketForCamera(cameraId) {
             if (typeof connectWebSocket === 'function') {
-                connectWebSocket(); // Kết nối WebSocket chung
-                // Đăng ký callback để xử lý tin nhắn
+                if (!window.stompClient || !window.stompClient.connected) {
+                     connectWebSocket(); 
+                }
                 window.webSocketMessageCallback = (message) => {
                     try {
                         const data = JSON.parse(message.body);
-                        // Kiểm tra xem đây có phải là ảnh mới cho camera hiện tại không
                         if (data.type === 'NEW_SNAPSHOT' && data.cameraId === parseInt(cameraId)) {
-                            // Giả định data.snapshot chứa đủ thông tin ảnh (id, filePath, capturedAt, cameraId)
-                            addImageToGallery(data.snapshot);
+                            addImageToGallery(data.snapshot, true); 
                         }
-                    } catch (e) {
-                        console.error('Lỗi phân tích cú pháp WebSocket message:', e);
-                    }
+                    } catch (e) { console.error('Lỗi socket msg:', e); }
                 };
-            } else {
-                console.warn('WebSocket functionality not available.');
             }
         }
     </script>

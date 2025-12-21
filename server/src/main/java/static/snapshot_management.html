@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kho ảnh đã chụp - Hệ thống Giám sát</title>
+    <title>Thư viện ảnh - Hệ thống Giám sát</title>
     
     <link rel="stylesheet" href="/assets/css/style.css"> 
     
@@ -11,99 +11,111 @@
         /* === TÙY CHỈNH BỘ LỌC === */
         .filter-controls {
             display: flex; 
-            flex-wrap: wrap; /* Cho phép xuống dòng trên màn hình nhỏ */
+            flex-wrap: wrap; 
             gap: 15px; 
             margin-bottom: 20px; 
             align-items: center;
-        }
-        .filter-controls .form-control {
-            min-width: 200px;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .filter-group label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-
-        /* === GIAO DIỆN DANH SÁCH MỚI === */
-        .image-list-container {
-            width: 100%;
-            background-color: var(--color-background-muted);
+            background: var(--color-background-main);
+            padding: 15px;
             border-radius: var(--border-radius-main);
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        
-        .image-list-header, .image-list-item {
+        .filter-controls .form-control { min-width: 180px; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label { font-size: 0.85rem; color: var(--color-text-secondary); }
+
+        /* === THANH CÔNG CỤ (SELECT ALL) === */
+        .grid-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+        .select-all-wrapper {
             display: flex;
             align-items: center;
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid var(--color-border);
-            gap: 1rem;
-        }
-        
-        .image-list-header {
-            background-color: var(--color-gray-100);
-            font-weight: 600;
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .image-list-item {
-            background-color: var(--color-background-main);
-            transition: background-color 0.2s;
-        }
-        .image-list-item:hover {
-            background-color: var(--color-gray-100);
-        }
-        
-        /* Cấu hình các cột */
-        .col-check { flex: 0 0 30px; }
-        .col-thumb { 
-            flex: 0 0 70px; /* 60px cho ảnh + 10px lề */
-        }
-        .col-id { flex: 0 0 80px; }
-        .col-camera { flex: 1 1 120px; }
-        .col-time { flex: 1 1 180px; }
-        .col-actions { flex: 0 0 80px; text-align: right; }
-
-        .list-thumbnail {
-            width: 60px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: var(--border-radius-main, 4px);
-            background-color: var(--color-gray-300);
-        }
-
-        .image-list-item .col-id strong {
-            color: var(--color-primary);
-        }
-
-        .image-list-item .details-btn {
-            background: none;
-            border: none;
-            color: var(--color-primary);
+            gap: 8px;
             cursor: pointer;
             font-weight: 600;
-            padding: 5px;
+            color: var(--color-text-primary);
         }
-        .image-list-item .details-btn:hover {
-            text-decoration: underline;
+        #select-all-checkbox { width: 18px; height: 18px; cursor: pointer; }
+
+        /* === GIAO DIỆN LƯỚI (GRID GALLERY) === */
+        .image-grid-container {
+            display: grid;
+            /* Tự động chia cột, mỗi cột tối thiểu 160px, tự co giãn */
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            width: 100%;
         }
-        
-        .image-checkbox, #select-all-checkbox {
-            width: 18px;
-            height: 18px;
+
+        .image-grid-item {
+            position: relative;
+            background-color: var(--color-gray-100);
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1 / 1; /* Tỉ lệ khung hình vuông 1:1 */
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
         }
+
+        .image-grid-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .image-grid-item.selected {
+            border-color: var(--color-primary);
+            background-color: var(--color-primary-light);
+        }
+
+        .image-grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cắt ảnh để vừa khít khung vuông */
+            transition: transform 0.3s;
+        }
+
+        .image-grid-item:hover img {
+            transform: scale(1.05); /* Zoom nhẹ khi hover */
+        }
+
+        /* Checkbox nổi trên ảnh */
+        .grid-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            z-index: 10;
+            cursor: pointer;
+            /* Tạo bóng để dễ nhìn trên nền ảnh sáng */
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.8));
+        }
+
+        /* Thông tin phủ dưới ảnh (Gradient) */
+        .grid-info-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 20px 10px 10px 10px;
+            font-size: 0.8rem;
+            pointer-events: none; /* Để click xuyên qua vào ảnh */
+        }
+
+        .grid-info-overlay .camera-name { font-weight: bold; display: block; }
+        .grid-info-overlay .time { font-size: 0.75rem; opacity: 0.9; }
 
         /* === THANH HÀNH ĐỘNG XÓA HÀNG LOẠT === */
         .batch-actions {
-            display: none; /* Ẩn mặc định, JS sẽ hiện */
+            display: none; 
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
@@ -111,6 +123,7 @@
             background-color: var(--color-primary-light);
             border-radius: var(--border-radius-main);
             color: var(--color-primary-dark);
+            border: 1px solid var(--color-primary);
         }
         #batch-delete-btn {
             background-color: var(--color-status-danger);
@@ -118,17 +131,21 @@
         }
 
         .loading-placeholder {
+            grid-column: 1 / -1; /* Chiếm hết chiều ngang lưới */
             text-align: center;
-            padding: 2rem;
+            padding: 3rem;
             color: var(--color-text-secondary);
+            font-style: italic;
         }
 
         /* === PHÂN TRANG === */
         .pagination-controls {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 20px;
             align-items: center;
             margin-top: 2rem;
+            margin-bottom: 3rem;
         }
         .pagination-controls .btn:disabled {
             background-color: var(--color-gray-300);
@@ -137,19 +154,75 @@
         }
         #page-info { font-weight: 600; }
 
-        /* === MODAL === */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.85); padding-top: 50px; }
-        .modal-content { position: relative; background-color: var(--color-background-main); margin: auto; color: var(--color-text-secondary); padding: 0; border-radius: var(--border-radius-main); width: 90%; max-width: 800px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); animation-name: animatetop; animation-duration: 0.4s; }
-        @keyframes animatetop { from {top: -300px; opacity: 0} to {top: 0; opacity: 1} }
-        .modal-header { padding: 1rem 1.5rem; background-color: var(--color-background-muted); color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); border-top-left-radius: var(--border-radius-main); border-top-right-radius: var(--border-radius-main); }
-        .close-btn { color: var(--color-text-secondary); float: right; font-size: 28px; font-weight: bold; line-height: 1; transition: 0.2s; }
-        .close-btn:hover, .close-btn:focus { color: var(--color-text-primary); text-decoration: none; cursor: pointer; }
-        .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .modal-image-container img { width: 100%; height: auto; max-height: 60vh; object-fit: contain; border-radius: var(--border-radius-main); background-color: var(--color-background-muted); }
-        .modal-details p { margin: 0.5rem 0; font-size: 1rem; }
-        .modal-details strong { color: var(--color-text-secondary); min-width: 100px; display: inline-block; }
-        .modal-actions { display: flex; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-background-muted); border-bottom-left-radius: var(--border-radius-main); border-bottom-right-radius: var(--border-radius-main); }
-        #modal-delete-btn { background-color: var(--color-status-danger); color: white; }
+        /* === MODAL (Giữ nguyên) === */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.9); padding-top: 50px; }
+        .modal-content { position: relative; background-color: var(--color-background-main); margin: auto; padding: 0; border-radius: var(--border-radius-main); width: 90%; max-width: 900px; animation-name: animatetop; animation-duration: 0.4s; }
+        @keyframes animatetop { from {top: -50px; opacity: 0} to {top: 0; opacity: 1} }
+        .modal-header { padding: 1rem 1.5rem; background-color: var(--color-background-muted); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; border-radius: var(--border-radius-main) var(--border-radius-main) 0 0; }
+        .close-btn { font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-body { padding: 0; display: flex; flex-direction: column; }
+        .modal-image-container { background-color: black; display: flex; justify-content: center; align-items: center; height: 60vh; }
+        .modal-image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .modal-details { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); }
+        .modal-info-text p { margin: 5px 0; }
+        .modal-actions { display: flex; gap: 10px; }
+        #modal-delete-btn { background-color: var(--color-status-danger); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        .modal-image-container { 
+    background-color: #ffffff; /* Nền trắng */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 60vh; 
+    border-bottom: 1px solid #e0e0e0; /* Đường kẻ mờ ngăn cách với phần tin */
+    padding: 20px;
+}
+
+/* Ảnh trong modal: Thêm bóng đổ để nổi bật trên nền trắng */
+.modal-image-container img { 
+    max-width: 100%; 
+    max-height: 100%; 
+    object-fit: contain; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15); /* Đổ bóng nhẹ */
+    border-radius: 4px;
+}
+
+/* Phần thông tin chi tiết: Nền trắng, chữ đen */
+.modal-details { 
+    background-color: #ffffff;
+    padding: 20px 30px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-radius: 0 0 var(--border-radius-main) var(--border-radius-main);
+}
+
+/* Chữ thông tin: To hơn, màu đen rõ ràng */
+.modal-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Khoảng cách giữa các dòng */
+}
+
+.modal-info-text p { 
+    margin: 0; 
+    color: #333333; /* Màu xám đen đậm */
+    font-size: 1.1rem; /* Cỡ chữ to hơn */
+    line-height: 1.5;
+}
+
+.modal-info-text strong {
+    color: #000000; /* Tiêu đề đậm đen hoàn toàn */
+    font-weight: 700;
+    margin-right: 5px;
+    min-width: 80px; /* Canh thẳng hàng tiêu đề */
+    display: inline-block;
+}
+
+/* Nút bấm trong modal */
+.modal-actions { 
+    display: flex; 
+    gap: 15px; 
+}
     </style>
 </head>
 <body>
@@ -164,13 +237,13 @@
     </header>
 
     <main>
-        <h1 class="page-title">Kho ảnh đã chụp</h1>
+        <h1 class="page-title">Kho ảnh</h1>
         
         <div class="filter-controls">
             <div class="filter-group">
-                <label for="client-filter">Lọc theo Camera</label>
+                <label for="client-filter">Camera</label>
                 <select id="client-filter" class="form-control">
-                    <option value="all">-- Tất cả ảnh của tôi --</option>
+                    <option value="all">-- Tất cả --</option>
                 </select>
             </div>
             
@@ -190,52 +263,48 @@
 
         <div class="batch-actions" id="batch-actions-bar">
             <span id="batch-selected-count">Đã chọn 0 ảnh</span>
-            <button class="btn" id="batch-delete-btn">Xóa các ảnh đã chọn</button>
+            <button class="btn" id="batch-delete-btn">Xóa mục đã chọn</button>
         </div>
 
-        <div class="image-list-container">
-            <div class="image-list-header">
-                <div class="col-check">
-                    <input type="checkbox" id="select-all-checkbox" title="Chọn tất cả">
-                </div>
-                <div class="col-thumb">Xem trước</div>
-                <div class="col-id">Snapshot ID</div>
-                <div class="col-camera">Camera</div>
-                <div class="col-time">Thời gian chụp</div>
-                <div class="col-actions">Chi tiết</div>
-            </div>
-            <div id="image-list-body">
-                <p class="loading-placeholder">Đang tải thư viện ảnh...</p>
-            </div>
+        <div class="grid-toolbar">
+            <label class="select-all-wrapper">
+                <input type="checkbox" id="select-all-checkbox">
+                <span>Chọn tất cả trang này</span>
+            </label>
+            <span id="total-results-count" style="color: var(--color-text-secondary); font-size: 0.9rem;"></span>
+        </div>
+
+        <div class="image-grid-container" id="image-list-body">
+            <p class="loading-placeholder">Đang tải thư viện ảnh...</p>
         </div>
         
         <div class="pagination-controls" id="pagination-controls">
-            <button class="btn btn-secondary" id="prev-page-btn" disabled>Trang trước</button>
-            <span id="page-info">Trang 1 / 1</span>
-            <button class="btn btn-secondary" id="next-page-btn" disabled>Trang sau</button>
+            <button class="btn btn-secondary" id="prev-page-btn" disabled>&#8592; Trước</button>
+            <span id="page-info">1 / 1</span>
+            <button class="btn btn-secondary" id="next-page-btn" disabled>Sau &#8594;</button>
         </div>
     </main>
 
     <div id="image-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
+                <h3 id="modal-image-name">Chi tiết ảnh</h3>
                 <span class="close-btn">&times;</span>
-                <h2 id="modal-image-name">Chi tiết ảnh</h2>
             </div>
             <div class="modal-body">
                 <div class="modal-image-container">
                     <img id="modal-image-src" src="" alt="Chi tiết ảnh">
                 </div>
                 <div class="modal-details">
-                    <p><strong>Camera ID:</strong> <span id="modal-image-camera"></span></p>
-                    <p><strong>Thời gian:</strong> <span id="modal-image-time"></span></p>
+                    <div class="modal-info-text">
+                        <p><strong>Camera:</strong> <span id="modal-image-camera"></span></p>
+                        <p><strong>Thời gian:</strong> <span id="modal-image-time"></span></p>
+                    </div>
+                    <div class="modal-actions">
+                        <a href="#" download id="modal-download-btn" class="btn btn-primary">Tải về</a>
+                        <button id="modal-delete-btn">Xóa ảnh</button>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-actions">
-                <a href="#" download id="modal-download-btn" class="btn btn-primary" style="margin-right: 10px;">
-                    Tải về
-                </a>
-                <button class="btn btn-danger" id="modal-delete-btn">Xóa ảnh</button>
             </div>
         </div>
     </div>
@@ -250,6 +319,9 @@
         const prevPageBtn = document.getElementById('prev-page-btn');
         const nextPageBtn = document.getElementById('next-page-btn');
         const pageInfo = document.getElementById('page-info');
+        const totalResultsCount = document.getElementById('total-results-count');
+        
+        // Modal elements
         const modal = document.getElementById('image-modal');
         const modalImg = document.getElementById('modal-image-src');
         const modalName = document.getElementById('modal-image-name');
@@ -277,7 +349,7 @@
         let currentCameraId = null;
         let currentStartDate = null;
         let currentEndDate = null;
-        let selectedImageIds = new Set(); // Dùng Set để lưu các ID được chọn
+        let selectedImageIds = new Set();
 
         // === INIT ===
         document.addEventListener('DOMContentLoaded', async () => {
@@ -285,8 +357,8 @@
             loadImages(currentPage);
             setupEventListeners();
             if (localStorage.getItem('authToken')) {
-            connectWebSocket();
-    }
+                // connectWebSocket(); // Uncomment nếu có dùng socket
+            }
         });
 
         // ----------------------------------------------------
@@ -307,7 +379,7 @@
                     cameras.forEach(camera => {
                         const option = document.createElement('option');
                         option.value = camera.id; 
-                        option.textContent = `Camera: ${camera.cameraName} (ID: ${camera.id})`;
+                        option.textContent = `${camera.cameraName} (ID: ${camera.id})`;
                         clientGroup.appendChild(option);
                     });
                 });
@@ -321,9 +393,8 @@
             listBody.innerHTML = '<p class="loading-placeholder">Đang tải thư viện ảnh...</p>'; 
             
             try {
-                const size = 20; // Số ảnh mỗi trang
+                const size = 24; // Tăng số lượng ảnh để đẹp hơn trên Grid
                 
-                // GỌI API ĐÃ CẬP NHẬT
                 const pageData = await getImageList(
                     page, 
                     size, 
@@ -338,38 +409,36 @@
                     selectAllCheckbox.checked = false;
                     selectAllCheckbox.disabled = true;
                     updateBatchDeleteUI();
+                    if(totalResultsCount) totalResultsCount.textContent = '(0 ảnh)';
                     return;
                 }
 
                 listBody.innerHTML = ''; 
                 selectAllCheckbox.disabled = false;
+                if(totalResultsCount) totalResultsCount.textContent = `(Tổng: ${pageData.totalElements} ảnh)`;
 
                 pageData.content.forEach(image => {
                     const timestamp = new Date(image.capturedAt).toLocaleString('vi-VN');
                     const isChecked = selectedImageIds.has(image.id.toString());
+                    const activeClass = isChecked ? 'selected' : '';
 
-                    // Đã thêm .col-thumb
+                    // === RENDER DẠNG GRID ITEM (THUMBNAIL) ===
                     const itemHTML = `
-                        <div class="image-list-item" data-id="${image.id}" 
+                        <div class="image-grid-item ${activeClass}" 
+                             data-id="${image.id}" 
                              data-src="${image.filePath}" 
                              data-name="Snapshot ID ${image.id}" 
                              data-camera="${image.cameraId}" 
                              data-time="${timestamp}">
                             
-                            <div class="col-check">
-                                <input type="checkbox" class="image-checkbox" 
-                                       data-id="${image.id}" ${isChecked ? 'checked' : ''}>
-                            </div>
+                            <input type="checkbox" class="image-checkbox grid-checkbox" 
+                                   data-id="${image.id}" ${isChecked ? 'checked' : ''}>
                             
-                            <div class="col-thumb">
-                                <img src="${image.filePath}" class="list-thumbnail" alt="Snapshot ${image.id}">
-                            </div>
-
-                            <div class="col-id"><strong>ID: ${image.id}</strong></div>
-                            <div class="col-camera">Camera ${image.cameraId}</div>
-                            <div class="col-time">${timestamp}</div>
-                            <div class="col-actions">
-                                <button class="details-btn">Xem</button>
+                            <img src="${image.filePath}" loading="lazy" alt="ID ${image.id}">
+                            
+                            <div class="grid-info-overlay">
+                                <span class="camera-name">Cam ${image.cameraId}</span>
+                                <span class="time">${new Date(image.capturedAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
                             </div>
                         </div>
                     `;
@@ -382,21 +451,21 @@
 
             } catch (error) {
                 console.error('Lỗi khi tải thư viện ảnh:', error);
-                listBody.innerHTML = `<p class="loading-placeholder" style="color: var(--color-status-danger);">Không thể tải thư viện: ${error.message}</p>`;
+                listBody.innerHTML = `<p class="loading-placeholder" style="color: var(--color-status-danger);">Lỗi: ${error.message}</p>`;
             }
         }
 
         // ----------------------------------------------------
-        // CẬP NHẬT GIAO DIỆN (UI)
+        // CẬP NHẬT UI
         // ----------------------------------------------------
         function updatePagination(pageData) {
             if (!pageData || pageData.totalPages === 0) {
                 prevPageBtn.disabled = true;
                 nextPageBtn.disabled = true;
-                pageInfo.textContent = 'Trang 1 / 1';
+                pageInfo.textContent = '1 / 1';
                 return;
             }
-            pageInfo.textContent = `Trang ${pageData.number + 1} / ${pageData.totalPages}`;
+            pageInfo.textContent = `${pageData.number + 1} / ${pageData.totalPages}`;
             prevPageBtn.disabled = pageData.first; 
             nextPageBtn.disabled = pageData.last;
         }
@@ -417,7 +486,6 @@
                 selectAllCheckbox.checked = false;
                 return;
             }
-            
             const allVisibleSelected = Array.from(visibleCheckboxes).every(cb => 
                 selectedImageIds.has(cb.dataset.id)
             );
@@ -425,14 +493,12 @@
         }
 
         // ----------------------------------------------------
-        // LOGIC SỰ KIỆN (Event Listeners)
+        // SỰ KIỆN (EVENT LISTENERS)
         // ----------------------------------------------------
         function setupEventListeners() {
-            // 1. LỌC
+            // 1. FILTER
             applyFilterBtn.addEventListener('click', () => {
                 currentCameraId = (clientFilterSelect.value === 'all') ? null : parseInt(clientFilterSelect.value);
-                
-                // Chuyển đổi ngày sang định dạng ISO string, hoặc null
                 currentStartDate = startDateInput.value ? new Date(startDateInput.value).toISOString() : null;
                 currentEndDate = endDateInput.value ? new Date(endDateInput.value).toISOString() : null;
                 
@@ -440,56 +506,51 @@
                     alert("Ngày kết thúc không thể trước ngày bắt đầu.");
                     return;
                 }
-                
                 loadImages(0); 
             });
-            window.snapshotUpdateCallback = () => {
-                //alert('Đang tải ảnh mới...');
-                loadImages(0); 
-            };
+
             clearFilterBtn.addEventListener('click', () => {
                 clientFilterSelect.value = 'all';
                 startDateInput.value = '';
                 endDateInput.value = '';
-                
                 currentCameraId = null;
                 currentStartDate = null;
                 currentEndDate = null;
-                
                 loadImages(0);
             });
 
             // 2. PHÂN TRANG
-            prevPageBtn.addEventListener('click', () => {
-                if (currentPage > 0) loadImages(currentPage - 1);
-            });
-            nextPageBtn.addEventListener('click', () => {
-                loadImages(currentPage + 1);
-            });
+            prevPageBtn.addEventListener('click', () => { if (currentPage > 0) loadImages(currentPage - 1); });
+            nextPageBtn.addEventListener('click', () => { loadImages(currentPage + 1); });
 
-            // 3. SỰ KIỆN TRÊN DANH SÁCH (Event Delegation)
+            // 3. EVENT DELEGATION (Xử lý Click vào Ảnh hoặc Checkbox)
             listBody.addEventListener('click', (event) => {
                 const checkbox = event.target.closest('.image-checkbox');
-                const detailsButton = event.target.closest('.details-btn');
-                const item = event.target.closest('.image-list-item');
+                const gridItem = event.target.closest('.image-grid-item');
 
+                // Trường hợp 1: Click vào Checkbox
                 if (checkbox) {
-                    // Click vào checkbox
+                    // Ngăn sự kiện nổi bọt để không kích hoạt click vào gridItem (mở modal)
+                    event.stopPropagation(); 
+                    
                     const id = checkbox.dataset.id;
                     if (checkbox.checked) {
                         selectedImageIds.add(id);
+                        gridItem.classList.add('selected');
                     } else {
                         selectedImageIds.delete(id);
+                        gridItem.classList.remove('selected');
                     }
                     updateBatchDeleteUI();
                     updateSelectAllCheckboxState();
+                    return;
+                }
 
-                } else if (detailsButton || (item && !checkbox)) {
-                    // Click vào nút "Xem" hoặc vùng item (không phải checkbox)
-                    if(item) {
-                        const imageData = { ...item.dataset }; // Clone data
-                        showImageDetails(imageData);
-                    }
+                // Trường hợp 2: Click vào Ảnh (Grid Item) -> Mở Modal
+                if (gridItem) {
+                    // Lấy dữ liệu từ data attributes
+                    const imageData = { ...gridItem.dataset };
+                    showImageDetails(imageData);
                 }
             });
             
@@ -500,45 +561,41 @@
                 
                 visibleCheckboxes.forEach(cb => {
                     const id = cb.dataset.id;
+                    const gridItem = cb.closest('.image-grid-item');
                     if (isChecked) {
                         selectedImageIds.add(id);
                         cb.checked = true;
+                        gridItem.classList.add('selected');
                     } else {
                         selectedImageIds.delete(id);
                         cb.checked = false;
+                        gridItem.classList.remove('selected');
                     }
                 });
                 updateBatchDeleteUI();
             });
 
-            // 5. XÓA HÀNG LOẠT
+            // 5. BATCH DELETE
             batchDeleteBtn.addEventListener('click', async () => {
                 const ids = Array.from(selectedImageIds);
                 if (ids.length === 0) return;
-
                 if (!confirm(`Bạn có chắc muốn xóa ${ids.length} ảnh đã chọn không?`)) return;
                 
                 try {
-                    // Giả định bạn có hàm 'deleteBatchImages' trong api.js
                     await deleteBatchImages(ids); 
                     alert('Đã xóa thành công!');
                     selectedImageIds.clear();
-                    loadImages(currentPage); // Tải lại trang
-                    updateBatchDeleteUI();
-                    
+                    loadImages(currentPage); 
                 } catch (error) {
                     console.error('Lỗi khi xóa hàng loạt:', error);
                     alert(`Không thể xóa: ${error.message}`);
                 }
             });
 
-            // 6. MODAL (Đóng)
+            // 6. MODAL ACTIONS
             closeModalBtn.addEventListener('click', closeModal);
-            window.addEventListener('click', (event) => {
-                if (event.target == modal) closeModal();
-            });
+            window.addEventListener('click', (event) => { if (event.target == modal) closeModal(); });
 
-            // 7. MODAL: XÓA ẢNH ĐƠN
             modalDeleteBtn.addEventListener('click', async () => {
                 const id = modalDeleteBtn.getAttribute('data-delete-id');
                 if (!id) return; 
@@ -547,7 +604,7 @@
                 try {
                     await deleteImage(id); 
                     alert('Đã xóa ảnh thành công!');
-                    selectedImageIds.delete(id); // Xóa khỏi set nếu có
+                    selectedImageIds.delete(id);
                     closeModal(); 
                     loadImages(currentPage); 
                 } catch (error) {
@@ -558,26 +615,32 @@
         }
 
         // ----------------------------------------------------
-        // LOGIC MODAL (Hiển thị/Đóng)
+        // MODAL FUNCTIONS
         // ----------------------------------------------------
-        function showImageDetails(data) {
-            modalName.textContent = `Snapshot ID: ${data.id}`;
-            modalImg.src = data.src;
-            modalImg.alt = `Snapshot ${data.id}`;
-            modalCamera.textContent = data.camera;
-            modalTime.textContent = data.time;
-            
-            modalDeleteBtn.setAttribute('data-delete-id', data.id);
-            modalDownloadBtn.href = data.src;
-            modalDownloadBtn.download = `snapshot_ID${data.id}_${data.camera}.jpg`;
-            
-            modal.style.display = 'block';
-        }
+        // ----------------------------------------------------
+// MODAL FUNCTIONS (Đã cập nhật)
+// ----------------------------------------------------
+function showImageDetails(data) {
+    modalName.textContent = `Chi tiết: ${data.name || 'Snapshot'}`;
+    modalName.style.color = '#000'; // Đảm bảo tiêu đề màu đen
+    modalImg.src = data.src;
+    modalCamera.textContent = data.camera ? `${data.camera}` : 'Không xác định';
+    modalTime.textContent = data.time ? `${data.time}` : '--:--';
+
+    // 4. Cập nhật Nút hành động
+    modalDeleteBtn.setAttribute('data-delete-id', data.id);
+    
+    modalDownloadBtn.href = data.src;
+    const safeTimeStr = data.time.replace(/[:\/\s]/g, '_'); 
+    modalDownloadBtn.download = `snapshot_cam${data.camera}_${safeTimeStr}.jpg`;
+    
+    // 5. Hiển thị Modal
+    modal.style.display = 'block';
+}
 
         function closeModal() {
             modal.style.display = 'none';
             modalImg.src = ""; 
-            modalDeleteBtn.removeAttribute('data-delete-id'); 
         }
     </script>
 </body>
