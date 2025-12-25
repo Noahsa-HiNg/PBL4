@@ -1,6 +1,6 @@
-package com.pbl4.server.config; // Ensure correct package
+package com.pbl4.server.config; 
 
-// --- Necessary Imports ---
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.security.JwtAuthenticationFilter; // Your login filter
 import com.pbl4.server.security.JwtAuthorizationFilter; // **REQUIRED: Filter to check token**
@@ -34,18 +34,18 @@ import java.util.Map;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Use final fields and constructor injection (recommended)
+
     private final UserDetailsServiceImpl userDetailsService;
     private final ObjectMapper objectMapper;
-    private final JwtTokenProvider jwtTokenProvider; // **Inject Token Provider**
+    private final JwtTokenProvider jwtTokenProvider; 
 
-    // Constructor for dependency injection
+
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
                           ObjectMapper objectMapper,
-                          JwtTokenProvider jwtTokenProvider) { // **Add JwtTokenProvider**
+                          JwtTokenProvider jwtTokenProvider) { 
         this.userDetailsService = userDetailsService;
         this.objectMapper = objectMapper;
-        this.jwtTokenProvider = jwtTokenProvider; // **Initialize Token Provider**
+        this.jwtTokenProvider = jwtTokenProvider; 
     }
 
     @Bean
@@ -61,19 +61,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
 
-        // Instantiate the LOGIN filter, passing required dependencies
         JwtAuthenticationFilter customAuthFilter = new JwtAuthenticationFilter(authenticationManager, jwtTokenProvider, objectMapper);
-        // Set the URL this filter processes
         customAuthFilter.setFilterProcessesUrl("/api/auth/login");
 
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless JWT
-            .cors(Customizer.withDefaults()) // Apply CORS configuration from the WebMvcConfigurer Bean below
+            .csrf(csrf -> csrf.disable()) 
+            .cors(Customizer.withDefaults()) 
             .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) // **Crucial for JWT**
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) 
             )
             .exceptionHandling(exceptions -> exceptions
-                // Custom handler for 401 Unauthorized errors (when token is missing/invalid)
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpStatus.UNAUTHORIZED.value());
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -98,28 +95,29 @@ public class SecurityConfig {
             		        "/assets/**", 
             		        "/admin/**",
             		        "/camera_list.html",
-            		        "/camera_gallery.html"
+            		        "/camera_gallery.html",
+            		        "/change_password.html",
+            		        "/verify_success.html"
             		        
             		    ).permitAll()
-                // Allow login, error pages, and static assets publicly
             	.requestMatchers("/ws/updates/**").permitAll()
                 .requestMatchers("/api/auth/**", "/error", "/assets/**").permitAll()
                 // **Allow viewing images publicly (if desired)** - Place specific rules first
                 .requestMatchers(HttpMethod.PUT, "/api/users/{id}").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/users/*/request-email-change").authenticated()
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/images/view/**").permitAll()
-        
-                // All other /api/** endpoints require authentication
+                .requestMatchers("/verify_email.html").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/verify-email-change").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/verify-email-change").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/images/view/**").permitAll()       
                 .requestMatchers("/api/**").authenticated()
-                // Any other request also requires authentication
+                .requestMatchers("/api/auth/change-password").authenticated()
                 .anyRequest().authenticated()
             )
-            // **ADD THE FILTERS IN THE CORRECT ORDER**
-            // 1. Add the custom LOGIN filter (replaces the default form login filter)
+       
             .addFilter(customAuthFilter)
-            // 2. Add the custom AUTHORIZATION filter (checks token on other requests)
-            //    It runs BEFORE the standard UsernamePasswordAuthenticationFilter
+
             .addFilterBefore(new JwtAuthorizationFilter(jwtTokenProvider, userDetailsService),
                              UsernamePasswordAuthenticationFilter.class);
 
@@ -138,8 +136,8 @@ public class SecurityConfig {
             }
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // Apply to all API paths
-                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://92.168.123.228:8080") 
+                registry.addMapping("/api/**") 
+                        .allowedOrigins("http://127.0.0.1:5500","http://localhost:8080","http://192.168.110.236:8080") 
                         //.allowedOrigins("**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") 
                         .allowedHeaders("*")

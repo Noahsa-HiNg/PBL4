@@ -350,14 +350,82 @@
         let currentStartDate = null;
         let currentEndDate = null;
         let selectedImageIds = new Set();
+// === LOGIC XỬ LÝ WEBSOCKET ===
 
+
+
+// Định nghĩa hàm callback để websocket.js gọi khi có ảnh mới
+
+window.snapshotUpdateCallback = function(message) {
+
+    console.log("Giao diện nhận được tín hiệu làm mới:", message);
+
+    const newImgData = message ? (message.image || message) : null;
+
+    if (currentCameraId && newImgData && newImgData.cameraId && currentCameraId !== newImgData.cameraId) {
+
+        return; 
+
+    }
+
+    if (currentStartDate || currentEndDate) {
+
+        return; 
+
+    }
+
+
+    if (currentPage === 0) {
+
+        loadImages(0); // Tải lại danh sách ảnh mới nhất
+
+        showToast("Đã cập nhật ảnh mới!");
+
+    } else {
+
+
+        showToast("Có ảnh mới ở trang đầu.");
+
+    }
+
+};
+
+
+
+// Hàm hiển thị thông báo nhỏ (Toast)
+
+function showToast(text) {
+
+    const div = document.createElement('div');
+
+    div.innerText = text;
+
+    div.style.cssText = `
+
+        position: fixed; bottom: 20px; right: 20px;
+
+        background: var(--color-primary); color: #fff;
+
+        padding: 10px 20px; border-radius: 4px;
+
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+
+        z-index: 9999; animation: fadeUp 0.3s forwards;
+
+    `;
+
+    document.body.appendChild(div);
+
+    setTimeout(() => div.remove(), 3000);
+
+}
         // === INIT ===
         document.addEventListener('DOMContentLoaded', async () => {
             await loadFilterOptions();
             loadImages(currentPage);
             setupEventListeners();
             if (localStorage.getItem('authToken')) {
-                // connectWebSocket(); // Uncomment nếu có dùng socket
+                 connectWebSocket(); // Uncomment nếu có dùng socket
             }
         });
 

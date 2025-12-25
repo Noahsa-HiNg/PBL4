@@ -1,22 +1,26 @@
 package com.pbl4.server.controller;
 
+import com.pbl4.server.dto.ChangePasswordRequest;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.security.JwtTokenProvider; 
 import pbl4.common.model.User;
 import com.pbl4.server.service.UserService;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,14 +48,9 @@ public class AuthController {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
-    
-    /**
-     * Đây là Endpoint Đăng nhập DUY NHẤT.
-     * Nó nhận JSON (username, password) và trả về JSON (token).
-     */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        // 1. Xác thực username/password từ request
+   
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -62,11 +61,9 @@ public class AuthController {
 
         String jwt = tokenProvider.generateToken(authentication);
 
-        // 4. Trả về Token cho client (khớp với LoginResponse của client)
-        // Client JavaFX của bạn đang mong đợi 1 trường tên là "token"
         return ResponseEntity.ok(Map.of("token", jwt));
     }
-    @Autowired // Cần thiết để lấy thông tin chi tiết User
+    @Autowired 
     private UserService userService1; 
 
     @GetMapping("/me")
@@ -89,9 +86,9 @@ public class AuthController {
                             .orElse("VIEWER");
 
         Map<String, Object> response = new HashMap<>();
-        response.put("id", userEntity.getId()); // Bổ sung ID (rất quan trọng cho Frontend)
+        response.put("id", userEntity.getId()); 
         response.put("username", username);
-        response.put("email", userEntity.getEmail()); // BỔ SUNG EMAIL
+        response.put("email", userEntity.getEmail());
         response.put("role", role);
 
         return ResponseEntity.ok(response);
@@ -109,12 +106,13 @@ public class AuthController {
         }
     }
     @GetMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
+    public void verifyEmail(@RequestParam("token") String token, HttpServletResponse response) throws IOException {
         try {
             userService.verifyEmail(token);
-            return ResponseEntity.ok("Xác thực email thành công! Bạn có thể đăng nhập.");
+            response.sendRedirect("/verify_success.html"); 
+
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi: " + e.getMessage());
+            response.sendRedirect("/login.html?error=" + e.getMessage());
         }
     }
     @PostMapping("/forgot-password")
@@ -133,7 +131,6 @@ public class AuthController {
             String token = body.get("token");
             String newPassword = body.get("newPassword");
             
-            // (Thêm kiểm tra validate mật khẩu mới nếu cần, ví dụ: phải đủ 8 ký tự)
             
             userService.resetPassword(token, newPassword);
             return ResponseEntity.ok(Map.of("message", "Mật khẩu đã được đặt lại thành công."));
@@ -141,5 +138,31 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
     }
-    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        try {
+       
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            userService.changePassword(username, request);
+
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
+
+        } catch (BadCredentialsException e) {
+            // Trả về lỗi 400 nếu sai mật khẩu cũ
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Lỗi hệ thống"));
+        }
+    }
+    @PostMapping("/verify-email-change") // Hoặc GetMapping tùy bạn
+    public ResponseEntity<?> verifyEmailChange(@RequestParam String token) {
+        try {
+            // Gọi hàm verifyEmailChange (Hàm này check bảng email_change_tokens)
+            userService.verifyEmailChange(token); 
+            return ResponseEntity.ok(Map.of("message", "Đổi email thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

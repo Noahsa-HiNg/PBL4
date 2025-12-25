@@ -66,7 +66,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String sessionId = session.getId();
         
-        // 1. KIỂM TRA XEM CÓ PHẢI LÀ "APP" VỪA NGẮT KHÔNG
+       
         Integer clientId = clientIdBySessionId.remove(sessionId);
         
         if (clientId != null) {

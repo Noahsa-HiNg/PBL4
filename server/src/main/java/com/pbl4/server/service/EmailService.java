@@ -12,9 +12,6 @@ public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
-    
-    // URL trỏ về Frontend (hoặc Backend nếu bạn phục vụ HTML từ Spring)
-    
     @Value("${server.public.url}")
     private String frontendBaseUrl; 
 
@@ -48,5 +45,24 @@ public class EmailService {
         email.setSubject(subject);
         email.setText(message);
         mailSender.send(email);
+    }
+    public void sendEmailChangeVerification(String toNewEmail, String token) {
+        String subject = "Xác nhận thay đổi Email - HiAn System";
+       
+        String verifyUrl = frontendBaseUrl + "/verify_email.html?token=" + token; 
+        
+        String message = "Xin chào,\n\n" +
+                "Chúng tôi nhận được yêu cầu thay đổi email cho tài khoản của bạn sang địa chỉ này.\n" +
+                "Vui lòng nhấp vào đường dẫn sau để xác nhận thay đổi:\n" +
+                verifyUrl + "\n\n" +
+                "Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.";
+
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setTo(toNewEmail); 
+        email.setSubject(subject);
+        email.setText(message);
+        mailSender.send(email);
+        
+        System.out.println("Đã gửi mail xác thực đổi email tới: " + toNewEmail);
     }
 }

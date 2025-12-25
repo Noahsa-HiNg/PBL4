@@ -53,7 +53,7 @@ public class CameraController {
         // Giả sử cameraService.findById(id) trả về Optional<CameraEntity>
         return cameraService.findById(id)
             .map(camera -> {
-                // 2. Map thủ công sang Object khác để tránh lỗi JSON 100%
+         
                 Map<String, Object> response = new HashMap<>();
                 response.put("id", camera.getId());
                 response.put("cameraName", camera.getCameraName());
@@ -178,16 +178,15 @@ public class CameraController {
         String usernameToNotify; // Biến để giữ username
 
         try {
-            // --- Logic CSDL ---
-            // GỌI HÀM SERVICE ĐÃ SỬA:
+          
             usernameToNotify = cameraService.deleteCamera(id, currentUserId);
-            // Nếu dòng trên chạy xong, CSDL ĐÃ ĐƯỢC COMMIT (xóa thành công)
+           
             
         } catch (EntityNotFoundException e) {
-            // Lỗi quyền hoặc không tìm thấy
+            
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            // Bất kỳ lỗi CSDL nào khác (ví dụ: IOException từ imageService)
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error during database operation: " + e.getMessage()));
         }
         

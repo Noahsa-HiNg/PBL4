@@ -49,7 +49,6 @@ public class ImageController {
         this.imageService = imageService;
         this.userService = userService;
         this.webSocketHandler = webSocketHandler;
-        // Normalize the base storage path
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         System.out.println("DEBUG: fileStorageLocation được khởi tạo là: " + this.fileStorageLocation.toString());
     }
