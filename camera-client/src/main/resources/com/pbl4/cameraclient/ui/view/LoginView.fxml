@@ -5,28 +5,55 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="400.0" spacing="15.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.pbl4.cameraclient.ui.controller.LoginController">
+<HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" 
+      prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.pbl4.cameraclient.ui.controller.LoginController"
+      stylesheets="@../css/login-style.css" 
+      styleClass="root-hbox">
    <children>
-      <Label text="Camera Client Login">
-         <font>
-            <Font name="System Bold" size="24.0" />
-         </font>
-      </Label>
-      <Label text="Username" VBox.vgrow="NEVER" />
+      <VBox alignment="CENTER" prefHeight="200.0" prefWidth="400.0" styleClass="left-panel">
+         <children>
+            <Label styleClass="app-title" text="AceInvoice">
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </Label>
+            <Label styleClass="app-subtitle" text="Time Tracking and Invoicing" />
+         </children>
+      </VBox>
       
-      <TextField fx:id="usernameField" maxWidth="200.0" promptText="Enter your username" />
-      
-      <Label text="Password" />
-      <PasswordField fx:id="passwordField" maxWidth="200.0" promptText="Enter your password" />
-      
-      <Button fx:id="loginButton" mnemonicParsing="false" onAction="#handleLoginButtonAction" prefWidth="100.0" text="Login" />
-      
-      <Label fx:id="statusLabel" textFill="RED" />
+      <VBox alignment="CENTER" prefHeight="200.0" prefWidth="400.0" styleClass="right-panel">
+         <children>
+            <VBox alignment="TOP_LEFT" maxWidth="280.0" spacing="15.0">
+               <children>
+                  <Label styleClass="form-header" text="Sign In" />
+                  <TextField fx:id="usernameField" promptText="Email" styleClass="form-input" />
+                  <PasswordField fx:id="passwordField" promptText="Password" styleClass="form-input" />
+                  <Label styleClass="forgot-password-link" 
+                         text="Forgot Password?" 
+                         onMouseClicked="#handleForgotPassword" />
+                  
+                  <Button fx:id="loginButton" mnemonicParsing="false" onAction="#handleLoginButtonAction" 
+                          text="Sign In" styleClass="sign-in-button" maxWidth="Infinity" />
+                  
+                  <Label fx:id="statusLabel" alignment="CENTER" maxWidth="Infinity" styleClass="status-label" />
+                  <Button mnemonicParsing="false" 
+                          text="Don't have an account? Sign Up" 
+                          styleClass="sign-up-button" 
+                          maxWidth="Infinity" 
+                          onAction="#handleSignUp">
+                     <VBox.margin>
+                        <Insets top="15.0" />
+                     </VBox.margin>
+                  </Button>
+               </children>
+            </VBox>
+         </children>
+      </VBox>
    </children>
-   <padding>
-      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-   </padding>
-</VBox>
+</HBox>

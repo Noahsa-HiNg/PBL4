@@ -4,6 +4,7 @@
   <artifactId>camera-client</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>camera-client</name>
+  
     <dependencies>
       <dependency>
         <groupId>vn.edu.dut.pbl4</groupId>
@@ -22,6 +23,11 @@
     <version>17.0.2</version>
 </dependency>
 <dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-graphics</artifactId>
+    <version>17.0.2</version>
+</dependency>
+<dependency>
     <groupId>com.squareup.okhttp3</groupId>
     <artifactId>okhttp</artifactId>
     <version>4.10.0</version>
@@ -31,7 +37,42 @@
     <artifactId>jackson-databind</artifactId>
     <version>2.15.2</version>
 </dependency>
-    
+<dependency>
+    <groupId>org.bytedeco</groupId>
+    <artifactId>javacv-platform</artifactId>
+    <version>1.5.10</version> </dependency>
+<dependency>
+    <groupId>org.bytedeco</groupId>
+    <artifactId>opencv-platform</artifactId>
+    <version>4.9.0-1.5.10</version> </dependency>
+<dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+            <version>4.0.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+    <groupId>org.glassfish.tyrus.bundles</groupId>
+    <artifactId>tyrus-standalone-client</artifactId>
+    <version>1.15</version> 
+</dependency>
+<dependency>
+    <groupId>org.kordamp.ikonli</groupId>
+    <artifactId>ikonli-javafx</artifactId>
+    <version>12.3.1</version> 
+</dependency>
+
+<dependency>
+    <groupId>org.kordamp.ikonli</groupId>
+    <artifactId>ikonli-fontawesome-pack</artifactId>
+    <version>12.3.1</version>
+</dependency>
+       
   </dependencies>
   <build>
     <plugins>

@@ -7,7 +7,10 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URL;
+
+import javax.swing.JOptionPane;
 
 /**
  * Lớp chính để khởi chạy ứng dụng JavaFX Client.
@@ -49,7 +52,31 @@ public class MainApp extends Application {
     /**
      * Phương thức main truyền thống để khởi chạy ứng dụng.
      */
+ // Chọn một cổng ngẫu nhiên ít người dùng (từ 49152 đến 65535)
+    private static final int SINGLE_INSTANCE_PORT = 56789; 
+    private static ServerSocket instanceSocket;
+
     public static void main(String[] args) {
-        launch(args);
+        try {
+            // 1. Cố gắng chiếm dụng cổng này
+            instanceSocket = new ServerSocket(SINGLE_INSTANCE_PORT);
+            
+            // Nếu dòng trên chạy qua mà không lỗi, nghĩa là chưa có ai chạy
+            // -> Tiếp tục khởi chạy JavaFX
+            launch(args);
+
+        } catch (IOException e) {
+            // 2. Nếu vào đây, nghĩa là cổng đã bị chiếm (App đang chạy rồi)
+            System.err.println("Ứng dụng đang chạy! Không thể mở thêm.");
+            
+            // Hiển thị thông báo (Dùng JOptionPane của Java Swing cho nhanh gọn)
+            JOptionPane.showMessageDialog(null, 
+                "Ứng dụng Camera Client đang chạy rồi!\nVui lòng kiểm tra thanh taskbar.", 
+                "Cảnh báo", 
+                JOptionPane.WARNING_MESSAGE);
+
+            // 3. Tắt ngay lập tức
+            System.exit(1);
+        }
     }
 }

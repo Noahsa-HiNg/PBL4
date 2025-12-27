@@ -1,27 +1,172 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.pbl4.cameraclient.ui.controller.MainViewController">
-   <left>
-      <VBox prefWidth="200.0" spacing="10.0" style="-fx-background-color: #f4f4f4; -fx-padding: 10;">
-         <children>
-            <Label text="Danh sách Camera">
-               <font>
-                  <Font name="System Bold" size="16.0" />
-               </font>
-            </Label>
-            </children>
-      </VBox>
-   </left>
-   <center>
-      <Label text="Màn hình chính - Xem Console để thấy kết quả đồng bộ" BorderPane.alignment="CENTER">
-         <font>
-            <Font size="18.0" />
-         </font>
-      </Label>
-   </center>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane fx:id="rootPane" prefHeight="720.0" prefWidth="1280.0" styleClass="root-pane" stylesheets="@../css/main-style.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.pbl4.cameraclient.ui.controller.MainViewController">
+
+<top>
+        <HBox fx:id="topHeader" alignment="CENTER_LEFT" spacing="10.0" styleClass="top-header" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="10.0" right="20.0" bottom="10.0" left="20.0" />
+            </padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                <FontIcon iconLiteral="fa-code" iconSize="32" styleClass="header-logo-icon" />
+                <Text styleClass="header-title" text="HIAN TECHNOLOGY" />
+            </HBox>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <HBox alignment="CENTER_RIGHT" spacing="15.0">
+
+              <HBox alignment="CENTER" spacing="5.0">
+                    <Button fx:id="emailButton1" styleClass="icon-button-header" onAction="#handleEmail1Click">
+                        <graphic>
+                            <FontIcon iconLiteral="fa-envelope" iconSize="18" />
+                        </graphic>
+                    </Button>
+                    <Label fx:id="emailLabel1" text="102230142@sv1.dut.udn.vn" styleClass="contact-text" />
+                </HBox>
+
+                <HBox alignment="CENTER" spacing="5.0">
+                    <Button fx:id="emailButton2" styleClass="icon-button-header" onAction="#handleEmail2Click">
+                        <graphic>
+                            <FontIcon iconLiteral="fa-envelope" iconSize="18" />
+                        </graphic>
+                    </Button>
+                    <Label fx:id="emailLabel2" text="102230149@sv1.dut.udn.vn" styleClass="contact-text" />
+                </HBox>
+                <MenuButton fx:id="userMenuButton" styleClass="icon-button-header">
+                    <graphic>
+                        <FontIcon iconLiteral="fa-user-circle" iconSize="20" />
+                    </graphic>
+                    <items>
+                        <MenuItem text="Cài đặt tài khoản" onAction="#handleAccountSettings" />
+                        <SeparatorMenuItem />
+                        <MenuItem text="Đăng xuất" onAction="#handleLogout" />
+                    </items>
+                </MenuButton>
+
+            </HBox>
+        </HBox>
+    </top>
+
+<left>
+    <VBox fx:id="leftSidebar" spacing="20.0" styleClass="left-sidebar" BorderPane.alignment="CENTER">
+        <padding>
+            <Insets top="20.0" right="15.0" bottom="20.0" left="15.0" />
+        </padding>
+
+        <VBox spacing="10.0">
+            <Button fx:id="addCameraButton" 
+                    mnemonicParsing="false" 
+                    styleClass="add-camera-button-light" 
+                    text="Thêm Camera" 
+                    maxWidth="Infinity"/>
+            
+            <Button fx:id="selectSaveDirButton" 
+                    mnemonicParsing="false" 
+                    styleClass="select-dir-button" 
+                    text="Thư mục lưu ảnh" 
+                    maxWidth="Infinity"/>
+        </VBox>
+
+        <VBox VBox.vgrow="ALWAYS" spacing="5.0">
+            <Label text="Nhật ký hoạt động" styleClass="section-title" />
+            
+            <TextArea fx:id="notificationArea" 
+                      editable="false" 
+                      wrapText="true" 
+                      styleClass="notification-area"
+                      promptText="Chưa có thông báo nào..."
+                      VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+    </VBox>
+</left>
+
+    <center>
+        <VBox fx:id="mainContentContainer" spacing="15.0" styleClass="main-content-container" BorderPane.alignment="CENTER">
+             <padding>
+                 <Insets top="20.0" right="30.0" bottom="20.0" left="30.0" />
+             </padding>
+             <Text styleClass="content-area-title" text="CameraList" />
+
+             <ScrollPane fx:id="cameraScrollPane" fitToWidth="true" fitToHeight="true" styleClass="camera-scroll-pane" VBox.vgrow="ALWAYS">
+                 <content>
+                     <TilePane fx:id="cameraDisplayPane" hgap="20.0" vgap="20.0" styleClass="camera-tile-pane">
+                          <padding>
+                              <Insets top="10.0" />
+                          </padding>
+                          </TilePane>
+                 </content>
+             </ScrollPane>
+        </VBox>
+    </center>
+
+<right>
+    <VBox fx:id="rightSidebar" spacing="15.0" styleClass="right-sidebar" managed="true" visible="true">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        </padding>
+
+        <VBox spacing="5.0">
+            <Text styleClass="config-section-title" text="Client Information" />
+            <GridPane hgap="5.0" vgap="5.0">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="NEVER" minWidth="80.0" prefWidth="80.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                </rowConstraints>
+                <children>
+                    <Label styleClass="client-info-label" text="Name:" GridPane.rowIndex="0" />
+                    <Label fx:id="clientNameLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <Label styleClass="client-info-label" text="IP Address:" GridPane.rowIndex="1" />
+                    <Label fx:id="ipAddressLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <Label styleClass="client-info-label" text="Status:" GridPane.rowIndex="2" />
+                    <Label fx:id="statusLabelRight" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                    <Label styleClass="client-info-label" text="Image Size:" GridPane.rowIndex="3" />
+                    <Label fx:id="imageSizeLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    <Label styleClass="client-info-label" text="Interval:" GridPane.rowIndex="4" />
+                    <Label fx:id="intervalLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                    <Label styleClass="client-info-label" text="Quality:" GridPane.rowIndex="5" />
+                    <Label fx:id="qualityLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                    <Label styleClass="client-info-label" text="Last Seen:" GridPane.rowIndex="6" />
+                    <Label fx:id="lastHeartbeatLabel" styleClass="client-info-value" text="..." GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                </children>
+                <VBox.margin>
+                    <Insets top="5.0" />
+                </VBox.margin>
+            </GridPane>
+        </VBox>
+        
+    </VBox>
+</right>
+
 </BorderPane>

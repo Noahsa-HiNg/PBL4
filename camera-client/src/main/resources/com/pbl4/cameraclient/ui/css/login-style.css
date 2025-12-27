@@ -1,0 +1,130 @@
+/* Màu sắc chính */
+.purple-primary {
+    -fx-base-color: #6C5CE7; /* Màu tím chủ đạo */
+    -fx-text-fill: white;
+}
+.white-bg {
+    -fx-background-color: white;
+}
+
+/* Container chính chia đôi màn hình */
+.root-hbox {
+    -fx-background-color: #F0F2F5; /* Màu nền nhẹ cho toàn bộ cửa sổ */
+}
+
+/* Phần bên trái - Thông tin ứng dụng */
+.left-panel {
+    -fx-background-color: #6C5CE7; /* Màu tím theo ảnh */
+    -fx-padding: 20px;
+    -fx-text-fill: white; /* Đặt mặc định chữ màu trắng cho phần này */
+}
+
+.left-panel .app-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.left-panel .app-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #E0E0E0; /* Màu trắng nhạt hơn */
+}
+
+/* Phần bên phải - Form đăng nhập */
+.right-panel {
+    -fx-background-color: white; /* Nền trắng */
+    -fx-padding: 40px;
+}
+
+.form-header {
+    -fx-font-size: 28px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #333333;
+    -fx-padding-bottom: 20px; /* Khoảng cách với các trường input */
+}
+
+/* Các trường nhập liệu (Email, Password) */
+.form-input {
+    -fx-font-size: 14px;
+    -fx-pref-height: 40px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #DCDCDC;
+    -fx-border-width: 1px;
+    -fx-background-insets: 0;
+    -fx-prompt-text-fill: #AAAAAA;
+    -fx-padding: 0 10px;
+}
+
+.form-input:focused {
+    -fx-border-color: #6C5CE7; /* Màu tím khi focus */
+    -fx-border-width: 2px;
+    -fx-background-color: #FFFFFF;
+}
+
+/* Link "Forgot Password?" */
+.forgot-password-link {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6C5CE7; /* Màu tím */
+    -fx-underline: false; /* Bỏ gạch chân mặc định nếu bạn muốn dùng Hyperlink */
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-max-width: Infinity; /* Đẩy sang phải */
+    -fx-padding-bottom: 5px;
+}
+
+.forgot-password-link:hover {
+    -fx-text-fill: #5B4ABF; /* Màu tím đậm hơn khi hover */
+    -fx-underline: true;     /* Gạch chân khi rê chuột */
+}
+
+/* Nút "Sign In" */
+.sign-in-button {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-pref-height: 45px;
+    -fx-background-color: #6C5CE7; /* Màu tím */
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+}
+
+.sign-in-button:hover {
+    -fx-background-color: #5B4ABF; /* Màu tím đậm hơn khi hover */
+}
+
+/* Nút "Don't have an account? Sign Up" */
+.sign-up-button {
+    -fx-font-size: 14px;
+    -fx-pref-height: 45px;
+    -fx-background-color: #FFFFFF; /* Nền trắng */
+    -fx-border-color: #6C5CE7; /* Viền tím */
+    -fx-border-width: 1px;
+    -fx-text-fill: #6C5CE7; /* Chữ tím */
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-cursor: hand;
+}
+
+.sign-up-button:hover {
+    -fx-background-color: #F0F2F5; /* Nền xám nhạt khi hover */
+}
+
+/* Nhãn thông báo lỗi (statusLabel) */
+.status-label {
+    -fx-text-fill: #D32F2F; /* Màu đỏ */
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+/* Logo hình tròn - CHỈ ĐỊNH NGHĨA 1 LẦN DUY NHẤT */
+.app-logo {
+    -fx-fit-width: 120px;
+    -fx-fit-height: 120px;
+    -fx-preserve-ratio: true;
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+    -fx-border-color: white;
+    -fx-border-width: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 3);
+}

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.pbl4.cameraclient.ui.controller.EditCameraDialogController"
+      spacing="15" style="-fx-padding: 20; -fx-background-color: -fx-control-inner-background;">
+    
+    <Label text="Sửa thông tin Camera" style="-fx-font-size: 1.5em; -fx-font-weight: bold;"/>
+    
+    <GridPane hgap="10" vgap="10">
+        <padding>
+            <Insets top="10"/>
+        </padding>
+        
+        <Label text="Tên Camera:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="cameraNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                   promptText="Ví dụ: Camera Sân Trước"/>
+
+        <Label text="Địa chỉ IP:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="ipAddressField" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                   promptText="Ví dụ: 192.168.1.100"/>
+        
+        <Label text="Tên đăng nhập (RTSP):" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <TextField fx:id="usernameField" GridPane.rowIndex="2" GridPane.columnIndex="1"
+                   promptText="(Để trống nếu không có)"/>
+
+        <Label text="Mật khẩu (RTSP):" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <PasswordField fx:id="passwordField" GridPane.rowIndex="3" GridPane.columnIndex="1"
+                       promptText="(Để trống nếu không có)"/>
+        
+        <Label text="URL (RTSP):" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="urlField" GridPane.rowIndex="4" GridPane.columnIndex="1"
+                   promptText="rtsp://... (Nếu trống, sẽ tự động tạo)"/>
+        </GridPane>
+
+    <Label fx:id="errorLabel" style="-fx-text-fill: red;" managed="false" visible="false"/>
+
+    <Button fx:id="saveButton" text="Lưu thay đổi" onAction="#handleSave" 
+            style="-fx-font-weight: bold;" defaultButton="true"/>
+</VBox>

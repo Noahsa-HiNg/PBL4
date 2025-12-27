@@ -1,0 +1,335 @@
+/* --- Global Styles --- */
+.root-pane {
+    -fx-background-color: #FFFFFF; /* Nền trắng chủ đạo */
+    -fx-font-family: "Segoe UI", system-ui, sans-serif; /* Font hệ thống */
+}
+
+.label, .text {
+     -fx-text-fill: #34495E; /* Màu chữ chính (xanh đậm/đen) */
+}
+
+
+/* --- Top Header --- */
+.top-header {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #EAECEE; /* Viền dưới mờ */
+    -fx-border-width: 0 0 1 0; /* Chỉ viền dưới */
+}
+
+.header-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-fill: #2C3E50; /* Màu tiêu đề đậm */
+}
+
+.icon-button-header {
+     -fx-background-color: transparent;
+     -fx-padding: 5px;
+     -fx-cursor: hand;
+}
+.icon-button-header:hover {
+     -fx-background-color: #f4f6f8; /* Nền xám nhạt khi hover */
+     -fx-background-radius: 50%;
+}
+
+
+/* --- Left Sidebar --- */
+.left-sidebar {
+    -fx-background-color: #F4F9FF; /* Màu nền xanh rất nhạt */
+    -fx-pref-width: 250px;
+    -fx-border-color: #EAECEE; /* Viền phải mờ */
+    -fx-border-width: 0 1 0 0; /* Chỉ viền phải */
+}
+
+.sidebar-main-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600; /* Semi-bold */
+    -fx-fill: #2C3E50;
+}
+
+.navigation-tree-light {
+    -fx-background-color: transparent;
+}
+
+/* Kiểu cho các mục trong TreeView */
+.navigation-tree-light .tree-cell {
+    -fx-text-fill: #566573; /* Màu chữ xám đậm */
+    -fx-padding: 10px 15px;
+    -fx-font-size: 13px;
+    -fx-background-color: transparent; /* Nền trong suốt */
+     -fx-border-radius: 6px; /* Bo góc nhẹ */
+     -fx-background-radius: 6px;
+}
+.navigation-tree-light .tree-cell:selected {
+    -fx-background-color: #E3F2FD; /* Nền xanh dương rất nhạt khi chọn */
+    -fx-text-fill: #1A5276; /* Chữ xanh đậm khi chọn */
+    -fx-font-weight: 600; /* In đậm khi chọn */
+}
+.navigation-tree-light .tree-cell:hover:not(:selected) {
+     -fx-background-color: #EDF5FC; /* Nền hơi xanh khi hover */
+}
+
+/* Bỏ mũi tên mặc định */
+.navigation-tree-light .tree-disclosure-node .arrow {
+    -fx-background-color: null;
+    -fx-shape: null;
+}
+
+.add-camera-button-light {
+    -fx-background-color: #EBF5FF; /* Nền xanh nhạt */
+    -fx-text-fill: #3498DB; /* Chữ xanh dương */
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: #AED6F1; /* Viền xanh nhạt */
+    -fx-padding: 10px;
+    -fx-cursor: hand;
+    -fx-alignment: center-left; /* Căn chữ sang trái */
+    -fx-graphic-text-gap: 10px; /* Khoảng cách chữ và icon (nếu có) */
+}
+.add-camera-button-light:hover {
+     -fx-background-color: #D6EAF8;
+}
+.select-dir-button {
+    -fx-background-color: #F4F6F8; /* Màu nền xám nhạt (nút phụ) */
+    -fx-text-fill: #566573; /* Màu chữ xám đậm */
+    -fx-font-weight: 500; /* Medium weight */
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: #D5DBDB; /* Viền xám nhạt */
+    -fx-padding: 10px;
+    -fx-cursor: hand;
+    -fx-alignment: center-left;
+    -fx-graphic-text-gap: 10px;
+}
+.select-dir-button:hover {
+     -fx-background-color: #EAECEE; /* Đổi màu khi hover */
+}
+
+
+/* --- Main Content Area (Center) --- */
+.main-content-container {
+    -fx-background-color: #FFFFFF; /* Nền trắng */
+}
+
+.content-area-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+    -fx-fill: #2C3E50;
+}
+
+.camera-scroll-pane {
+     -fx-background-color: transparent; /* Nền trong suốt cho ScrollPane */
+     -fx-border-color: transparent;
+     -fx-background: transparent;
+}
+
+.camera-tile-pane {
+     /* TilePane không cần style nền đặc biệt */
+}
+
+
+/* --- Card Styles (Cho Camera Stream) --- */
+.camera-card { /* Kiểu CSS cho VBox chứa ImageView */
+    -fx-background-color: #F8F9FA; /* Nền xám rất nhạt */
+    -fx-padding: 2px; /* Padding nhỏ bên trong card */
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.1, 0, 2); /* Đổ bóng nhẹ hơn */
+    -fx-alignment: center;
+     /* Kích thước card có thể tự điều chỉnh theo ImageView hoặc đặt cố định */
+     /* Ví dụ: -fx-pref-width: 330px; */
+}
+
+.camera-card ImageView {
+     /* ImageView nên vừa khít card hoặc có margin nhỏ */
+     -fx-background-radius: 6px; /* Bo góc nhẹ cho ImageView */
+      -fx-border-radius: 6px;
+       -fx-smooth: true; /* Giữ ảnh mượt khi resize */
+}
+/* Kiểu cho tên camera */
+.camera-name-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500; /* Hơi đậm hơn */
+    -fx-text-fill: #34495E; /* Màu chữ đậm */
+    -fx-padding: 4px 0 2px 0; /* Khoảng cách trên/dưới */
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+/* Kiểu chung cho nút bấm */
+.camera-action-button {
+    -fx-font-size: 11px;
+    -fx-padding: 3px 10px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-cursor: hand;
+    -fx-pref-width: 100px; /* Đặt chiều rộng cố định cho nút */
+    -fx-alignment: center;
+}
+
+/* Kiểu riêng cho nút Kết nối lại */
+.reconnect-button {
+    -fx-background-color: #2ECC71; /* Màu xanh lá */
+    -fx-text-fill: white;
+}
+.reconnect-button:hover {
+    -fx-background-color: #27AE60;
+}
+
+/* Kiểu riêng cho nút Ngừng kết nối */
+.disconnect-button {
+    -fx-background-color: #E74C3C; /* Màu đỏ */
+    -fx-text-fill: white;
+}
+.disconnect-button:hover {
+    -fx-background-color: #C0392B;
+}
+
+/* Có thể thêm Label tên camera bên dưới ImageView nếu muốn */
+.camera-card .camera-name-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #555;
+    -fx-padding: 5 0 0 0; /* Padding trên */
+}
+
+
+/* --- Right Sidebar --- */
+.right-sidebar {
+    -fx-background-color: #FFFFFF;
+    -fx-pref-width: 280px;
+    -fx-border-color: #EAECEE; /* Viền trái mờ */
+    -fx-border-width: 0 0 0 1; /* Chỉ viền trái */
+}
+
+.sidebar-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-fill: #333;
+}
+
+.close-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 14px;
+    -fx-padding: 2px 6px;
+    -fx-cursor: hand;
+}
+.close-button:hover {
+    -fx-background-color: #eee;
+    -fx-background-radius: 50%;
+}
+
+.config-section-title {
+     -fx-font-size: 11px;
+     -fx-font-weight: bold;
+     -fx-text-fill: #777;
+     -fx-text-transform: uppercase; /* Chữ hoa */
+     -fx-padding: 10 0 5 0;
+}
+
+.check-box {
+    -fx-font-size: 13px;
+    -fx-text-fill: #444;
+}
+.check-box .box {
+     -fx-background-radius: 3px;
+      -fx-border-color: #ccc;
+      -fx-border-radius: 3px;
+}
+.check-box:selected .mark {
+     -fx-background-color: #3498DB; /* Màu tick xanh */
+}
+.check-box:selected .box {
+     -fx-border-color: #3498DB;
+}
+/* Làm cho nút menu "⋮" nhỏ gọn và không có nền */
+.camera-menu-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0px 5px; /* Điều chỉnh padding */
+    -fx-font-size: 1.2em;   /* Làm cho ký tự "⋮" to hơn */
+    -fx-font-weight: bold;
+}
+
+.camera-menu-button:hover {
+    -fx-background-color: #e0e0e0; /* Màu khi di chuột qua */
+    -fx-background-radius: 5;
+}
+
+/* Làm cho thanh tiêu đề (chứa tên và nút menu) */
+.camera-card-top-bar {
+    -fx-padding: 5px 5px 0px 10px; /* Padding: trên, phải, dưới, trái */
+    -fx-alignment: center-left;
+}
+
+/* Làm cho menu item "Xóa" có màu đỏ */
+.delete-menu-item .label {
+    -fx-text-fill: #D32F2F; /* Màu chữ đỏ */
+}
+
+.delete-menu-item:focused {
+     -fx-background-color: #FFCDD2; /* Màu nền khi chọn */
+}
+
+
+/* --- ScrollBar Styles (Tùy chọn) --- */
+/* (Giữ nguyên style ScrollBar từ lần trước nếu bạn thích) */
+.scroll-bar:vertical, .scroll-bar:horizontal{ -fx-background-color:transparent; }
+.increment-button, .decrement-button { -fx-background-color: transparent; -fx-border-color: transparent; }
+.scroll-bar:vertical .track, .scroll-bar:horizontal .track{ -fx-background-color: transparent; -fx-border-color: transparent; -fx-background-radius: 0em; }
+.scroll-bar:vertical .thumb, .scroll-bar:horizontal .thumb { -fx-background-color: #D5DBDB; -fx-background-radius: 5em; }
+
+
+/* Đổi màu icon chung (mặc định) */
+.font-icon {
+    -fx-fill: #555555; /* Màu xám đậm */
+}
+
+/* Đổi màu icon logo riêng */
+.header-logo-icon {
+    -fx-fill: #0078D7; /* Màu xanh dương */
+}
+
+/* Đổi màu icon khi hover nút */
+.icon-button-header:hover .font-icon {
+    -fx-fill: #005A9E; 
+}
+
+/* Đổi màu icon điện thoại */
+.contact-text .font-icon {
+    -fx-fill: #10893E; /* Màu xanh lá */
+}
+
+
+/*=================================================================
+ * RIGHT SIDEBAR (Thêm vào file CSS)
+ *=================================================================*/
+.right-sidebar {
+    -fx-background-color: -fx-primary-bg; /* Dùng màu nền từ theme */
+}
+
+/* Tiêu đề "Client Information" */
+.config-section-title {
+    -fx-font-size: 1.3em;       /* TO HƠN (130%) */
+    -fx-font-weight: 700;        /* RÕ HƠN (Bold) */
+    -fx-fill: -fx-primary-text;  /* Màu text chính, sáng */
+}
+
+/* CSS Bonus: Cải thiện giao diện cho phần thông tin */
+.client-info-label {
+    -fx-font-weight: 600; /* Hơi đậm */
+    -fx-text-fill: -fx-secondary-text; /* Màu text phụ */
+}
+
+.client-info-value {
+    -fx-text-fill: -fx-primary-text; /* Màu text chính */
+    /* Dùng font mono-space giúp các giá trị thẳng hàng và dễ đọc */
+    -fx-font-family: "Consolas", "Courier New", monospace; 
+}
+
+.camera-loading-indicator {
+    -fx-progress-color: -fx-accent-color;
+}
+.root {
+    -fx-accent-color: #0078D7; /* Màu xanh dương (hoặc màu bạn thích) */
+    /* ... các biến màu khác ... */
+}
