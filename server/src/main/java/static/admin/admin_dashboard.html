@@ -4,107 +4,294 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng Điều Khiển Admin</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link rel="stylesheet" href="../assets/css/style.css">
     <script src="../assets/js/auth.js"></script> 
     <style>
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1200px; margin: 30px auto; }
-        .admin-card { padding: 25px; border: 1px solid var(--color-border); border-radius: var(--border-radius-main); text-align: center; }
+        /* === CSS CŨ === */
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 1200px; margin: 30px auto; }
+        .admin-card { padding: 25px; border: 1px solid var(--color-border); border-radius: var(--border-radius-main); text-align: center; background: var(--color-background-surface); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .metric-value { font-size: 2rem; font-weight: bold; color: var(--color-primary); margin-top: 10px; }
+        
+        /* === CSS CHO BIỂU ĐỒ === */
+        .chart-section {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--color-border);
+        }
+        .chart-container {
+            position: relative; 
+            height: 350px; /* Chiều cao cố định để biểu đồ hiển thị đẹp */
+            width: 100%;
+        }
+
+        /* === CSS BẢNG XẾP HẠNG === */
+        .ranking-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 40px auto;
+        }
+
+        .ranking-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--color-primary);
+        }
+
+        .ranking-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .ranking-table { width: 100%; border-collapse: collapse; }
+        .ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .ranking-table th { color: #666; font-size: 0.9rem; }
+        .rank-badge { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: #eee; font-size: 0.8rem; font-weight: bold; }
+        .rank-1 { background-color: #ffd700; color: #fff; }
+        .rank-2 { background-color: #c0c0c0; color: #fff; }
+        .rank-3 { background-color: #cd7f32; color: #fff; }
+        .loading-text { color: #999; font-style: italic; }
     </style>
 </head>
 <body>
    <header class="app-header">
-        <a href="admin_dashboard.html" class="logo">■ Surveillance System</a>
+        <a href="admin_dashboard.html" class="logo">HiAn Admin</a>
         <nav>
-            <a href="admin_dashboard.html">Thống kê</a>
+            <a href="admin_dashboard.html" class="active">Thống kê</a>
             <a href="user_management.html">Quản lý người dùng</a>
             <a href="admin_setting.html">Cài đặt Cá nhân</a>
         </nav>
     </header>
 
     <main>
-    <h1 class="page-title">Bảng Điều Khiển Admin</h1>
-    <p>Tổng quan hệ thống và khu vực quản lý.</p>
-    
-    <div class="metrics-grid admin-grid">
-        <div class="admin-card metric-card">
-            <h2>Tổng User</h2>
-            <p id="metric-users" class="metric-value">...</p>
+        <h1 class="page-title">Tổng quan Hệ thống</h1>
+        
+        <div class="metrics-grid admin-grid">
+            <div class="admin-card metric-card">
+                <h2>Users</h2>
+                <p id="metric-users" class="metric-value">...</p>
+            </div>
+            <div class="admin-card metric-card">
+                <h2>Clients</h2>
+                <p id="metric-clients" class="metric-value">...</p>
+            </div>
+            <div class="admin-card metric-card">
+                <h2>Cameras</h2>
+                <p id="metric-total-cameras" class="metric-value">...</p>
+            </div>
+            <div class="admin-card metric-card">
+                <h2>Tổng Ảnh</h2>
+                <p id="metric-total-images" class="metric-value">...</p>
+            </div>
+            <div class="admin-card metric-card" style="border-color: green;">
+                <h2 style="color: green">Cam Online</h2>
+                <p id="metric-active-cameras" class="metric-value">...</p>
+            </div>
         </div>
-        <div class="admin-card metric-card">
-            <h2>Tổng Clients</h2>
-            <p id="metric-clients" class="metric-value">...</p>
+
+        <div class="chart-section">
+            <h2 class="page-title" style="margin-top: 0; margin-bottom: 20px; font-size: 1.3rem;">📊 Thống kê ảnh 30 ngày qua</h2>
+            <div class="chart-container">
+                <canvas id="weeklyChart"></canvas>
+            </div>
         </div>
-        <div class="admin-card metric-card">
-            <h2>Tổng Cameras</h2>
-            <p id="metric-total-cameras" class="metric-value">...</p>
+        
+        <h2 class="page-title" style="margin-top: 40px;">Bảng Xếp Hạng Thành Viên</h2>
+        <div class="ranking-container">
+            <div class="ranking-card">
+                <h3 class="ranking-title">🏆 Top Tải Lên Nhiều Nhất</h3>
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Tên người dùng</th>
+                            <th style="text-align: right;">Số ảnh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-images-body">
+                        <tr><td colspan="3" class="loading-text">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="ranking-card">
+                <h3 class="ranking-title">📷 Top Sở Hữu Camera</h3>
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Tên người dùng</th>
+                            <th style="text-align: right;">Số Camera</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-cameras-body">
+                        <tr><td colspan="3" class="loading-text">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="admin-card metric-card status-success">
-            <h2>Camera Hoạt động</h2>
-            <p id="metric-active-cameras" class="metric-value">...</p>
+
+        <h2 class="page-title" style="margin-top: 40px;">Công cụ Quản trị</h2>
+        <div class="admin-grid">
+            <a href="user_management.html" class="admin-card" style="text-decoration: none; color: inherit;">
+                <h2>Quản lý Tài khoản (CRUD)</h2>
+                <p style="margin-top: 10px; color: #666;">Thêm, sửa, xóa, tìm kiếm người dùng.</p>
+            </a>
         </div>
-        <div class="admin-card metric-card status-danger">
-            <h2>Camera Dừng</h2>
-            <p id="metric-inactive-cameras" class="metric-value">...</p>
-        </div>
-    </div>
-    
-    <h2 class="page-title">Công cụ Quản trị</h2>
-    <div class="admin-grid">
-        <a href="user_management.html" class="admin-card">
-            <h2>Quản lý Tài khoản (CRUD)</h2>
-            <p>Thêm, sửa, xóa, tìm kiếm người dùng.</p>
-        </a>
-    </div>
-</main>
+    </main>
 
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/api.js"></script>
     <script>
-        // Bắt buộc kiểm tra quyền truy cập khi tải trang
-        
-        
-    // Bắt buộc kiểm tra quyền truy cập khi tải trang
-    document.addEventListener('DOMContentLoaded', () => {
-        const userRole = localStorage.getItem('role');
-        if (userRole !== 'ADMIN') {
-            alert("Bạn không có quyền truy cập trang này.");
-            window.location.href = '../live_feed.html'; // Chuyển hướng về trang mặc định
-        }
-        
-        // Nếu là ADMIN, tải số liệu
-        loadAdminMetrics();
-    });
+        // Biến toàn cục biểu đồ
+        let myChart = null;
 
-    /**
-     * Hàm gọi API Metrics và đổ dữ liệu vào các thẻ.
-     */
-    async function loadAdminMetrics() {
-        const metricsUrl = `${API_BASE_URL}/admin/metrics`; // URL API Metrics mới
-        
-        try {
-            const response = await fetch(metricsUrl, { method: 'GET', headers: getAuthHeaders() });
-            
-            if (!response.ok) {
-                // Xử lý lỗi (vd: 403 Forbidden nếu SecurityConfig chưa được sửa)
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Lỗi tải số liệu: ${response.status}`);
+        document.addEventListener('DOMContentLoaded', () => {
+            const userRole = localStorage.getItem('role');
+            if (userRole !== 'ADMIN') {
+                alert("Bạn không có quyền truy cập trang này.");
+                window.location.href = '../live_feed.html'; 
+                return;
             }
             
-            const metrics = await response.json();
+            // Tải dữ liệu
+            loadAdminMetrics();
+            loadAdminRankings();
+            loadChartData(); // <--- Gọi hàm tải biểu đồ
+        });
 
-            // Đổ dữ liệu vào HTML
-            document.getElementById('metric-users').textContent = metrics.totalUsers;
-            document.getElementById('metric-clients').textContent = metrics.totalClients;
-            document.getElementById('metric-total-cameras').textContent = metrics.totalCameras;
-            document.getElementById('metric-active-cameras').textContent = metrics.activeCameras;
-            document.getElementById('metric-inactive-cameras').textContent = metrics.inactiveCameras;
+        // --- 1. TẢI METRICS ---
+        async function loadAdminMetrics() {
+            // LƯU Ý: Đã đổi URL thành /api/dashboard/... để khớp với Backend mới
+            const metricsUrl = `${API_BASE_URL}/admin/metrics`; 
             
-        } catch (error) {
-            console.error("Lỗi khi tải Metrics:", error);
-            document.getElementById('metric-users').textContent = `Lỗi: ${error.message}`;
-        }
-    }
+            try {
+                const response = await fetch(metricsUrl, { method: 'GET', headers: getAuthHeaders() });
+                if (!response.ok) throw new Error("Lỗi tải metrics");
+                const metrics = await response.json();
 
+                document.getElementById('metric-users').textContent = metrics.totalUsers;
+                document.getElementById('metric-clients').textContent = metrics.totalClients;
+                document.getElementById('metric-total-cameras').textContent = metrics.totalCameras;
+                document.getElementById('metric-total-images').textContent = metrics.totalImages ? metrics.totalImages.toLocaleString() : 0;
+                document.getElementById('metric-active-cameras').textContent = metrics.activeCameras;
+            } catch (error) {
+                console.error("Lỗi metrics:", error);
+            }
+        }
+
+        // --- 2. TẢI RANKINGS ---
+        async function loadAdminRankings() {
+            const rankingUrl = `${API_BASE_URL}/admin/rankings?limit=5`; 
+
+            try {
+                const response = await fetch(rankingUrl, { method: 'GET', headers: getAuthHeaders() });
+                if (!response.ok) throw new Error("Lỗi tải rankings");
+                const data = await response.json();
+                
+                renderRankingTable('ranking-images-body', data.topUsersByImages);
+                renderRankingTable('ranking-cameras-body', data.topUsersByCameras);
+            } catch (error) {
+                console.error("Lỗi rankings:", error);
+                document.getElementById('ranking-images-body').innerHTML = `<tr><td colspan="3" style="color:red">Lỗi tải</td></tr>`;
+                document.getElementById('ranking-cameras-body').innerHTML = `<tr><td colspan="3" style="color:red">Lỗi tải</td></tr>`;
+            }
+        }
+
+        // --- 3. TẢI DỮ LIỆU BIỂU ĐỒ (MỚI) ---
+        async function loadChartData() {
+            const chartUrl = `${API_BASE_URL}/admin/chart-data`; // Endpoint mới
+
+            try {
+                const response = await fetch(chartUrl, { method: 'GET', headers: getAuthHeaders() });
+                if (!response.ok) throw new Error("Lỗi tải dữ liệu biểu đồ");
+                
+                // Dữ liệu trả về là List<DailyImageStats> [{dateStr: '15/12', countVal: 10}, ...]
+                const dataList = await response.json();
+
+                // Tách thành 2 mảng cho Chart.js
+                const labels = dataList.map(item => item.dateStr);
+                const values = dataList.map(item => item.countVal);
+
+                renderChart(labels, values);
+
+            } catch (error) {
+                console.error("Lỗi biểu đồ:", error);
+                // Vẽ biểu đồ trống hoặc thông báo lỗi
+            }
+        }
+
+        // --- 4. VẼ BIỂU ĐỒ CHART.JS ---
+        function renderChart(labels, dataPoints) {
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            
+            if (myChart) myChart.destroy(); // Xóa biểu đồ cũ nếu có
+
+            myChart = new Chart(ctx, {
+                type: 'bar', // Dạng cột
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng ảnh',
+                        data: dataPoints,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)', // Xanh dương
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, // Ẩn chú thích vì chỉ có 1 cột
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Số ảnh' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Helper render bảng
+        function renderRankingTable(elementId, dataList) {
+            const tbody = document.getElementById(elementId);
+            tbody.innerHTML = ''; 
+            if (!dataList || dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">Chưa có dữ liệu</td></tr>`;
+                return;
+            }
+            dataList.forEach((item, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                const row = `
+                    <tr>
+                        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                        <td><strong>${item.username}</strong></td>
+                        <td style="text-align: right; font-weight: bold;">${item.value.toLocaleString()}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
     </script>
 </body>
 </html>

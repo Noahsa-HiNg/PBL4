@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực thay đổi Email - HiAn</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .verify-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 2rem;
+        }
+
+        /* --- CÁC TRẠNG THÁI HIỂN THỊ --- */
+        .hidden { display: none !important; }
+
+        /* 1. Loading Spinner */
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 2. Success Icon */
+        .icon-success {
+            color: #28a745;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 3. Error Icon */
+        .icon-error {
+            color: #dc3545;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        h2 { margin-bottom: 0.5rem; color: #333; }
+        p { color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
+
+        .btn-home {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .btn-home:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+
+    <main class="verify-card">
+        <a href="#" class="logo">HiAn System</a>
+
+        <div id="loading-box">
+            <div class="spinner"></div>
+            <h2>Đang xác thực...</h2>
+            <p>Vui lòng đợi trong giây lát, chúng tôi đang cập nhật email mới cho bạn.</p>
+        </div>
+
+        <div id="success-box" class="hidden">
+            <div class="icon-success">✓</div>
+            <h2>Thành công!</h2>
+            <p>Email của bạn đã được thay đổi thành công.<br>Vui lòng đăng nhập lại với email mới.</p>
+            <a href="login.html" class="btn-home">Về trang Đăng nhập</a>
+        </div>
+
+        <div id="error-box" class="hidden">
+            <div class="icon-error">✕</div>
+            <h2>Xác thực thất bại</h2>
+            <p id="error-message">Liên kết không hợp lệ hoặc đã hết hạn.</p>
+            <a href="login.html" class="btn-home" style="background-color: #6c757d;">Quay lại</a>
+        </div>
+    </main>
+
+    <script src="/assets/js/config.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Lấy các phần tử giao diện
+            const loadingBox = document.getElementById('loading-box');
+            const successBox = document.getElementById('success-box');
+            const errorBox = document.getElementById('error-box');
+            const errorMessage = document.getElementById('error-message');
+
+            // 1. Lấy token từ URL
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+
+            // Nếu không có token -> Báo lỗi ngay
+            if (!token) {
+                showError("Đường dẫn xác thực bị thiếu Token.");
+                return;
+            }
+
+            try {
+                // 2. Gọi API Verify Email Change
+                // Lưu ý: Đảm bảo API_BASE_URL đã được định nghĩa trong config.js (VD: http://localhost:8080/api)
+                // Nếu chưa có file config.js, hãy thay dòng dưới bằng: const baseUrl = 'http://localhost:8080/api';
+                const url = `${API_BASE_URL}/auth/verify-email-change?token=${token}`;
+
+                console.log("Đang gọi API:", url);
+
+                // Dùng POST vì Controller Backend dùng @PostMapping
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json().catch(() => ({})); // Phòng hờ lỗi parse JSON
+
+                // 3. Xử lý kết quả
+                if (response.ok) {
+                    showSuccess();
+                    
+                    // Xóa Token/User cũ trong LocalStorage để bắt buộc đăng nhập lại (Bảo mật)
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('id');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('username');
+                } else {
+                    // Hiển thị lỗi từ Backend trả về
+                    showError(data.message || "Mã xác thực không hợp lệ hoặc đã hết hạn.");
+                }
+
+            } catch (error) {
+                console.error("Lỗi kết nối:", error);
+                showError("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền.");
+            }
+
+            // --- CÁC HÀM HỖ TRỢ ---
+            function showSuccess() {
+                loadingBox.classList.add('hidden');
+                errorBox.classList.add('hidden');
+                successBox.classList.remove('hidden');
+            }
+
+            function showError(msg) {
+                loadingBox.classList.add('hidden');
+                successBox.classList.add('hidden');
+                errorBox.classList.remove('hidden');
+                errorMessage.textContent = msg;
+            }
+        });
+    </script>
+</body>
+</html>

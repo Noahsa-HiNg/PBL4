@@ -73,14 +73,8 @@ public class ImageService {
             throw new RuntimeException("Could not create the root directory for uploads.", e);
         }
     }
-
-    /**
-     * Lưu file ảnh vào cấu trúc thư mục và lưu metadata vào DB.
-     * Trả về DTO 'Image'.
-     */
     @Transactional
     public Image store(MultipartFile file, int cameraId, Timestamp capturedAt) {
-        // 1. Tìm Camera và Client ID
         CameraEntity camera = cameraRepository.findById(cameraId)
                 .orElseThrow(() -> new EntityNotFoundException("Error: Camera not found with id " + cameraId));
         Integer clientId = (camera.getClient() != null) ? camera.getClient().getId() : 0; 
@@ -125,21 +119,13 @@ public class ImageService {
             
             ImageEntity savedEntity = imageRepository.save(imageEntity);
             try {
-                // 3. Lấy username của người cần nhận
                 String ownerUsername = savedEntity.getCamera().getClient().getUser().getUsername();
-                
-                // 4. Tạo DTO (bạn đã có hàm toDto và buildFileUrl)
                 Image imageDto = toDto(savedEntity);
                 imageDto.setFilePath(buildFileUrl(imageDto.getFilePath())); 
-
-                // 5. Tạo tin nhắn JSON chuẩn
                 Map<String, Object> wsMessage = new HashMap<>();
-                wsMessage.put("type", "NEW_IMAGE"); // Loại tin nhắn
-                wsMessage.put("data", imageDto);    // Gói DTO vào
-                
+                wsMessage.put("type", "NEW_IMAGE"); 
+                wsMessage.put("data", imageDto);    
                 String jsonMessage = objectMapper.writeValueAsString(wsMessage);
-
-                // 6. GỌI HÀM SEND
                 webSocketHandler.sendMessageToUser(ownerUsername, jsonMessage);
 
             } catch (Exception e) {
@@ -155,10 +141,8 @@ public class ImageService {
         if (relativePath == null || relativePath.isBlank()) {
             return null;
         }
-        // Đảm bảo dùng dấu / cho URL
         String formattedPath = relativePath.replace("\\", "/"); 
-        
-        // URL này phải trỏ đến ImageController @GetMapping("/view")
+       
         return ServletUriComponentsBuilder.fromCurrentContextPath() 
                 .path("/api/images/view") 
                 .queryParam("path", formattedPath)
@@ -238,23 +222,15 @@ public class ImageService {
     public void deleteImage(Long id) {
         ImageEntity imageEntity = imageRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Image not found with id " + id));
-
-        // 1. Xóa file vật lý trước
         try {
             Path filePath = this.fileStorageLocation.resolve(imageEntity.getRelativePath()).normalize();
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            // Log lỗi nhưng vẫn tiếp tục xóa trong DB
             System.err.println("Could not delete file: " + imageEntity.getRelativePath() + " - " + e.getMessage());
         }
-
-        // 2. Xóa bản ghi trong CSDL
         imageRepository.delete(imageEntity);
     }
     
-    /**
-     * Hàm tiện ích private để chuyển đổi từ ImageEntity sang Image DTO.
-     */
     private Image toDto(ImageEntity entity) {
         if (entity == null) return null;
 
@@ -269,11 +245,7 @@ public class ImageService {
         if (entity.getCapturedAt() != null) {
             dto.setCapturedAt(entity.getCapturedAt());
         }
-        
-        // entity.getUploadedAt() là Timestamp (từ CSDL)
-        // dto.setUploadedAt() mong đợi LocalDateTime (theo báo lỗi)
         if (entity.getUploadedAt() != null) {
-            // Chuyển đổi Timestamp sang LocalDateTime
             dto.setUploadedAt(entity.getUploadedAt().toLocalDateTime()); 
         }
         dto.setMetadata(entity.getMetadata());
@@ -283,8 +255,6 @@ public class ImageService {
     private void updateClientStatusToActive(int clientId) {
         clientRepository.findById(clientId).ifPresent(client -> {
             client.setStatus("ACTIVE"); 
-//            client.setLastImageReceived(new Timestamp(System.currentTimeMillis())); 
-//            client.setLastPingAttempt(null); 
             clientRepository.save(client);
         });
     }

@@ -20,8 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
-    @Override // Thêm @Override
-    @Transactional // Đảm bảo hoạt động trong 1 transaction
+    @Override 
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         System.out.println("Attempting to load user: " + username); 
         
@@ -32,17 +31,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         System.out.println("User found: " + userEntity.getUsername());
         System.out.println("Password hash from DB: " + userEntity.getPasswordHash());
 
-        // 2. KHẮC PHỤC LỖI QUAN TRỌNG NHẤT (403 Forbidden)
-        // Spring Security yêu cầu vai trò phải có tiền tố "ROLE_"
         String roleName = "ROLE_" + userEntity.getRole().toUpperCase(); 
         
         // 3. Tạo danh sách quyền hạn
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(roleName));
 
-        // 4. Trả về đối tượng UserDetails của Spring Security
+        
         return new org.springframework.security.core.userdetails.User(
                 userEntity.getUsername(),
-                userEntity.getPasswordHash(), // Lấy hash từ Entity
+                userEntity.getPasswordHash(), 
                 authorities);
     }
 }

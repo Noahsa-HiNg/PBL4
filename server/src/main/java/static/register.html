@@ -70,7 +70,7 @@
                 const newUser = await registerUser(userData);
 
                 // Xử lý thành công
-                successMessage.textContent = `Đăng ký thành công cho '${newUser.username}'! Bạn có thể đăng nhập.`;
+                successMessage.textContent = `Đăng ký thành công! hãy vào email để xác thực tài khoản.`;
                 successMessage.style.display = 'block';
                 registerForm.reset(); // Xóa form
 

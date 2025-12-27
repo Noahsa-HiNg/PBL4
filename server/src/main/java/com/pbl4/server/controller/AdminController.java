@@ -1,6 +1,7 @@
 package com.pbl4.server.controller;
 
 import com.pbl4.server.service.DashboardService;
+import com.pbl4.server.dto.DailyImageStats;
 import com.pbl4.server.service.CameraService; // BỔ SUNG
 import com.pbl4.server.service.ClientService;
 import com.pbl4.server.service.UserService; // BỔ SUNG
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable; // BỔ SUNG
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.persistence.EntityNotFoundException; // BỔ SUNG
 import pbl4.common.model.Client;
@@ -90,5 +92,13 @@ public class AdminController {
              return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                      .body(Map.of("message", "Lỗi khi tải danh sách Clients."));
         }
+    }
+    @GetMapping("/rankings")
+    public ResponseEntity<?> getRankings(@RequestParam(defaultValue = "5") int limit) {
+        return ResponseEntity.ok(dashboardService.getSystemRankings(limit));
+    }
+    @GetMapping("/chart-data")
+    public ResponseEntity<List<DailyImageStats>> getChartData() {
+        return ResponseEntity.ok(dashboardService.getWeeklyChartData());
     }
 }

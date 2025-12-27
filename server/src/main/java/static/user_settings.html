@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cài đặt Tài khoản</title>
-    <link rel="stylesheet" href="/assets/css/style.css"> <script src="/assets/js/auth.js"></script> <style>
+    <link rel="stylesheet" href="/assets/css/style.css"> 
+    <script src="/assets/js/auth.js"></script> 
+    <style>
         .settings-container { max-width: 600px; }
         #status-message { margin-top: 1rem; display: none; }
         /* Style để vô hiệu hóa input */
@@ -17,7 +19,7 @@
 </head>
 <body>
     <header class="app-header">
-        <a href="live_feed.html" class="logo">■ Surveillance System</a>
+        <a href="live_feed.html" class="logo">HiAn</a>
         <nav>
             <a href="live_feed.html">Live Feed</a>
             <a href="client_setup.html">Client Setup</a>
@@ -30,15 +32,23 @@
         <div class="settings-container">
             <h1 class="page-title">Cài đặt Tài khoản</h1>
             <form id="settings-form">
-                <input type="hidden" id="userId"> <div class="form-group">
+                <input type="hidden" id="userId"> 
+                <div class="form-group">
                     <label for="username">Tên đăng nhập</label>
-                    <input type="text" id="username" class="form-control" disabled> </div>
+                    <input type="text" id="username" class="form-control" disabled> 
+                </div>
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" class="form-control" required>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" id="update-button">Cập nhật Thông tin</button>
+                <div class="form-actions" style="margin-top: 1rem; display: flex; gap: 10px; align-items: center;">
+                    <button type="submit" class="btn btn-primary" id="update-button">Cập nhật Thông tin</button>
+                    <a href="change_password.html" class="btn" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px 20px; border-radius: 4px; display: inline-block; text-align: center;">
+                        Đổi Mật Khẩu
+                    </a>
+                </div>
+                
                 <p id="status-message"></p>
             </form>
             
@@ -57,7 +67,9 @@
         </nav>
     </footer>
 
-    <script src="/assets/js/config.js"></script> <script src="/assets/js/api.js"></script> <script>
+    <script src="/assets/js/config.js"></script> 
+    <script src="/assets/js/api.js"></script> 
+    <script>
         const settingsForm = document.getElementById('settings-form');
         const logoutBtn = document.getElementById('logout-btn');
         const statusMessage = document.getElementById('status-message');
@@ -66,10 +78,19 @@
         const usernameInput = document.getElementById('username');
         const emailInput = document.getElementById('email');
 
-        let currentUserId = null; // Biến lưu ID user đang đăng nhập
+        // --- 1. KHAI BÁO BIẾN TOÀN CỤC (SỬA LỖI TẠI ĐÂY) ---
+        let currentUserId = null; 
+        let userCurrentEmail = ''; // Biến để lưu email cũ
 
         // Tải thông tin user hiện tại khi trang load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Kiểm tra token trước
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                 window.location.href = 'login.html';
+                 return;
+            }
+
             // Hiển thị link admin nếu là admin
             if (localStorage.getItem('role') === 'ADMIN') {
                  const adminLink = document.getElementById('admin-link-users');
@@ -77,89 +98,95 @@
             }
             
             try {
-                // Gọi /api/auth/me để lấy user hiện tại
                 if (typeof getCurrentUser !== 'function') throw new Error("API 'getCurrentUser' không tồn tại.");
+                
                 const user = await getCurrentUser();
-                if (user && user.id) { // Giả sử API /me trả về cả ID
-                    currentUserId = user.id; // Lưu ID lại
+                
+                if (user) {
+                    currentUserId = user.id;
                     userIdInput.value = user.id;
                     usernameInput.value = user.username;
+                    
+                    // --- 2. GÁN GIÁ TRỊ CHO BIẾN TOÀN CỤC ---
                     emailInput.value = user.email || '';
-                } else if (user && user.username) { // Nếu API /me chỉ trả username/role (như mock)
-                     usernameInput.value = user.username;
-                     // Cần gọi API khác để lấy ID và email nếu cần sửa
-                     // Hoặc đơn giản hóa: dùng username để update nếu API cho phép
-                     console.warn("API /me không trả về ID, cần gọi API khác để lấy ID user.");
-                     // Giả lập lấy ID từ mockUserId nếu dùng mock
-                     currentUserId = localStorage.getItem('mockUserId');
-                     userIdInput.value = currentUserId;
-                     // Nếu đang dùng mock, ta có thể gọi getUserById để lấy email
-                     if (currentUserId && typeof getUserById === 'function') {
-                         const fullUser = await getUserById(currentUserId);
-                         emailInput.value = fullUser.email || '';
-                     } else {
-                        updateButton.disabled = true; // Không có ID, không cho cập nhật
-                     }
-
+                    userCurrentEmail = user.email || ''; // Lưu lại để so sánh khi submit
                 } else {
                      throw new Error("Không lấy được thông tin người dùng.");
                 }
             } catch (error) {
                 showStatus("Lỗi tải thông tin user: " + error.message, true);
-                updateButton.disabled = true; // Vô hiệu hóa nút cập nhật nếu lỗi
+                updateButton.disabled = true;
             }
         });
 
         // Xử lý Cập nhật
         settingsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUserId) {
-                showStatus("Không xác định được ID người dùng để cập nhật.", true);
+            if (!currentUserId) return;
+
+            const newEmail = emailInput.value.trim();
+            
+            // --- 3. KIỂM TRA LOGIC VỚI BIẾN ĐÃ KHAI BÁO ---
+            if (newEmail === userCurrentEmail) { 
+                showStatus("Bạn chưa thay đổi email nào.", true);
                 return;
             }
 
-            const dataToUpdate = {
-                email: emailInput.value.trim()
-                // Chỉ gửi email, không gửi username/password/role
-                // Nếu có đổi password, thêm vào đây:
-                // password: newPasswordValue (nếu có)
-            };
-            statusMessage.style.display = 'none';
             updateButton.disabled = true;
-            updateButton.textContent = 'Đang lưu...';
+            updateButton.textContent = 'Đang xử lý...';
+            statusMessage.style.display = 'none';
 
             try {
-                if (typeof updateUser !== 'function') throw new Error("API 'updateUser' không tồn tại.");
-                // Gọi API cập nhật user với ID đã lấy được
-                await updateUser(currentUserId, dataToUpdate);
-                showStatus("Cập nhật thông tin thành công!", false);
+                const token = localStorage.getItem('authToken');
+                const url = `${API_BASE_URL}/users/${currentUserId}/request-email-change`; 
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ email: newEmail })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus(`Đã gửi liên kết xác thực tới ${newEmail}. Vui lòng kiểm tra hộp thư (cả mục Spam) để hoàn tất.`, false);
+                    updateButton.style.display = 'none'; 
+                } else if (response.status === 409) {
+                    showStatus("Email này đã được sử dụng bởi tài khoản khác. Vui lòng chọn email khác.", true);
+                } else {
+                    throw new Error(data.message || "Lỗi cập nhật.");
+                }
+
             } catch (error) {
-                showStatus(error.message || "Cập nhật thất bại.", true);
+                showStatus(error.message, true);
             } finally {
-                 updateButton.disabled = false;
-                 updateButton.textContent = 'Cập nhật Thông tin';
+                if(updateButton.style.display !== 'none') {
+                    updateButton.disabled = false;
+                    updateButton.textContent = 'Cập nhật Thông tin';
+                }
             }
         });
 
         // Xử lý Đăng xuất
         logoutBtn.addEventListener('click', async () => {
-            try {
-                 if (typeof logoutUser !== 'function') throw new Error("Hàm 'logoutUser' không tồn tại.");
-                await logoutUser(); // Gọi hàm logout từ api.js (xóa token)
-                // auth.js sẽ tự động chuyển hướng nếu cần, hoặc ta chuyển hướng ở đây
-                 if (typeof window !== 'undefined' && window.location.pathname.split('/').pop() !== 'login.html') {
-                    window.location.href = 'login.html'; // Quay về trang login
-                 }
-            } catch (error) {
-                console.error("Lỗi khi đăng xuất:", error);
-                alert("Lỗi đăng xuất.");
-            }
+            // Xóa hết storage
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('role');
+            localStorage.removeItem('id');
+            localStorage.removeItem('username');
+            
+            // Chuyển hướng
+            window.location.href = 'login.html';
         });
 
         // Hàm hiển thị thông báo
         function showStatus(message, isError = false) {
              statusMessage.textContent = message;
-             statusMessage.style.color = isError ? 'var(--color-status-danger)' : 'var(--color-status-success)';
+             statusMessage.style.color = isError ? 'red' : 'green';
              statusMessage.style.display = 'block';
         }
     </script>

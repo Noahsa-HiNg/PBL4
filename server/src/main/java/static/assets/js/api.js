@@ -377,12 +377,12 @@ async function deleteCamera(id) {
 
 // === API: /api/images ===
 
-async function getImageList(page = 0, size = 20, cameraId = null, start = null, end = null) {
+async function getImageList(page = 0, size = 20, cameraId = null, start = null, end = null, sort = 'capturedAt,desc') {
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('size', size);
 
-    params.append('sort', 'capturedAt,desc');
+    params.append('sort', sort); // Sử dụng tham số sort từ bên ngoài
 
     if (cameraId != null) {
         params.append('cameraId', cameraId);

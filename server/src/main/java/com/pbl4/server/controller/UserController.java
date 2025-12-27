@@ -132,4 +132,32 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error fetching stats."));
         }
     }
+    @PostMapping("/{userId}/request-email-change")
+    public ResponseEntity<?> requestEmailChange(
+            @PathVariable int userId, // UserEntity dùng int id
+            @RequestBody Map<String, String> request) {
+        
+        String newEmail = request.get("email");
+
+        // Validate cơ bản
+        if (newEmail == null || newEmail.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email không được để trống"));
+        }
+
+        try {
+            userService.requestEmailChange(userId, newEmail);
+            return ResponseEntity.ok(Map.of("message", "Đã gửi mail xác nhận thành công!"));
+
+        } catch (Exception e) {
+            // Xử lý lỗi trùng email
+            if ("EMAIL_EXIST".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("message", "Email này đã được sử dụng bởi người khác."));
+            }
+            
+            // Các lỗi khác
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
 }
