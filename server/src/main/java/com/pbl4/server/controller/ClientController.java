@@ -1,5 +1,6 @@
 package com.pbl4.server.controller;
 
+<<<<<<< Updated upstream
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pbl4.server.dto.ClientRegisterRequest;
@@ -11,6 +12,12 @@ import com.pbl4.server.websocket.MyWebSocketHandler;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import jakarta.persistence.EntityNotFoundException;
+=======
+import com.pbl4.server.dto.ClientRegisterRequest;
+import com.pbl4.server.dto.ClientRegisterResponse;
+import com.pbl4.server.service.ClientService;
+
+>>>>>>> Stashed changes
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -46,6 +53,24 @@ public class ClientController {
     	String username = authentication.getName();
         String remoteIpAddress = servletRequest.getRemoteAddr();
         ClientRegisterResponse response = clientService.registerOrGetClient(request, username, remoteIpAddress);
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/register")
+    public ResponseEntity<ClientRegisterResponse> registerClient(
+            @RequestBody ClientRegisterRequest request,
+            Authentication authentication,
+            HttpServletRequest servletRequest) {
+
+        // 1. Lấy username của user đang đăng nhập từ token
+    	String username = authentication.getName();
+
+        // 2. Lấy địa chỉ IP thật của máy client đang gọi API
+        String remoteIpAddress = servletRequest.getRemoteAddr();
+
+        // 3. Gọi Service để xử lý logic nghiệp vụ
+        ClientRegisterResponse response = clientService.registerOrGetClient(request, username, remoteIpAddress);
+
+        // 4. Trả về kết quả cho client
         return ResponseEntity.ok(response);
     }
 

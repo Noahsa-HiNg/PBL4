@@ -13,8 +13,13 @@ public class ClientDTO {
     private Timestamp lastHeartbeat; // Sử dụng Timestamp hoặc kiểu dữ liệu phù hợp
     private Integer imageWidth;
     private Integer imageHeight;
+<<<<<<< Updated upstream
     private Integer captureIntervalSeconds;
     private Integer compressionQuality;
+=======
+    private int captureIntervalSeconds;
+    private int compressionQuality;
+>>>>>>> Stashed changes
     private Timestamp createdAt;
     private Timestamp updatedAt;
     // Không cần user_id hoặc machine_id ở đây trừ khi client cần
@@ -42,6 +47,7 @@ public class ClientDTO {
     public Timestamp getLastHeartbeat() { return lastHeartbeat; }
     public Integer getImageWidth() { return imageWidth; }
     public Integer getImageHeight() { return imageHeight; }
+<<<<<<< Updated upstream
     public Integer getCaptureIntervalSeconds() { return captureIntervalSeconds; }
     public Integer getCompressionQuality() { return compressionQuality; }
     public Timestamp getCreatedAt() { return createdAt; }
@@ -89,6 +95,13 @@ public class ClientDTO {
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
     }
+=======
+    public int getCaptureIntervalSeconds() { return captureIntervalSeconds; }
+    public int getCompressionQuality() { return compressionQuality; }
+    public Timestamp getCreatedAt() { return createdAt; }
+    public Timestamp getUpdatedAt() { return updatedAt; }
+
+>>>>>>> Stashed changes
     // Setters có thể cần nếu bạn muốn dùng DTO này cho việc cập nhật
     // public void setId(int id) { this.id = id; }
     // ...

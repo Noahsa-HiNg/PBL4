@@ -11,7 +11,10 @@ public class CameraDTO {
     private String username;
     private String password; // Gửi username/password của camera để client kết nối
     private boolean isActive;
+<<<<<<< Updated upstream
     
+=======
+>>>>>>> Stashed changes
 
     // Constructor để dễ dàng chuyển đổi từ Entity sang DTO
     public CameraDTO(CameraEntity entity) {
@@ -35,6 +38,7 @@ public class CameraDTO {
     public String getUsername() { return username; }
     public String getPassword() { return password; }
     public boolean isActive() { return isActive; } // Jackson tự chuyển thành "active": true/false
+<<<<<<< Updated upstream
     public void setId(int id) {
         this.id = id;
     }
@@ -69,4 +73,6 @@ public class CameraDTO {
     public void setUrl(String url) {
         this.onvifUrl = url;
     }
+=======
+>>>>>>> Stashed changes
 }

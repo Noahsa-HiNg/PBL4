@@ -76,6 +76,10 @@ public class ImageController {
         String currentUsername = authentication.getName();
         try {
         	Timestamp capturedAt = new Timestamp(capturedAtMillis);
+<<<<<<< Updated upstream
+=======
+            // Service returns DTO with the relative path stored
+>>>>>>> Stashed changes
             Image savedDto = imageService.store(file, cameraId, capturedAt);
             savedDto.setFilePath(buildFileUrl1(savedDto.getFilePath())); 
             if (webSocketHandler != null && !"anonymousUser".equals(currentUsername)) {

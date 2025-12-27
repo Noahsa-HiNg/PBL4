@@ -4,21 +4,32 @@ import com.pbl4.server.dto.CameraDTO;
 import com.pbl4.server.dto.ClientDTO;
 import com.pbl4.server.dto.ClientRegisterRequest;
 import com.pbl4.server.dto.ClientRegisterResponse;
+<<<<<<< Updated upstream
 import com.pbl4.server.entity.CameraEntity;
 import com.pbl4.server.entity.ClientEntity;
 import com.pbl4.server.entity.UserEntity;
 import com.pbl4.server.repository.CameraRepository;
+=======
+import com.pbl4.server.entity.ClientEntity;
+import com.pbl4.server.entity.UserEntity;
+>>>>>>> Stashed changes
 import com.pbl4.server.repository.ClientRepository;
 import com.pbl4.server.repository.UserRepository;
 
 import io.jsonwebtoken.lang.Collections;
+<<<<<<< Updated upstream
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+=======
+>>>>>>> Stashed changes
 
 import org.springframework.stereotype.Service;
 import pbl4.common.model.Client; // DTO
 
+<<<<<<< Updated upstream
 import java.io.IOException;
+=======
+>>>>>>> Stashed changes
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +42,7 @@ import com.pbl4.server.repository.UserRepository;
 public class ClientService {
 	
     private final ClientRepository clientRepository;
+<<<<<<< Updated upstream
     private final ImageService imageService;
     private final UserRepository userRepository;
     private final CameraRepository cameraRepository;
@@ -45,6 +57,14 @@ public class ClientService {
         this.imageService = imageService;
     }
     
+=======
+    private final UserRepository userRepository;
+
+    public ClientService(ClientRepository clientRepository, UserRepository userRepository) {
+        this.clientRepository = clientRepository;
+        this.userRepository = userRepository;
+    }
+>>>>>>> Stashed changes
     public ClientRegisterResponse registerOrGetClient(ClientRegisterRequest request, String username, String remoteIpAddress) {
 
         // 1. Tìm UserEntity dựa vào username từ token (đảm bảo user tồn tại)
@@ -57,17 +77,36 @@ public class ClientService {
         if (existingClientOpt.isPresent()) {
             // ----- TRƯỜNG HỢP 1: Client ĐÃ TỒN TẠI -----
             ClientEntity client = existingClientOpt.get();
+<<<<<<< Updated upstream
             client.setIpAddress(remoteIpAddress);       // Cập nhật IP hiện tại
             client.setStatus("ACTIVE");                 // Đánh dấu là đang online
+=======
+
+            // Cập nhật thông tin mới nhất cho client
+            client.setIpAddress(remoteIpAddress);       // Cập nhật IP hiện tại
+            client.setStatus("online");                 // Đánh dấu là đang online
+>>>>>>> Stashed changes
             client.setLastHeartbeat(Timestamp.from(Instant.now())); // Cập nhật thời gian kết nối cuối
             client.setClientName(request.getClientName()); // Cập nhật tên nếu client có đổi
             clientRepository.save(client);              // Lưu thay đổi vào DB
 
+<<<<<<< Updated upstream
             List<CameraDTO> cameras = client.getCameras().stream()
                     .map(CameraDTO::new) 
                     .collect(Collectors.toList());
 
             System.out.println("Client '" + client.getClientName() + "' (ID: " + client.getId() + ") đã kết nối lại. Tìm thấy " + cameras.size() + " camera.");
+=======
+            // Lấy danh sách camera liên kết với client này
+            // Do dùng FetchType.EAGER nên cameras đã được tải cùng client
+            List<CameraDTO> cameras = client.getCameras().stream()
+                    .map(CameraDTO::new) // Chuyển từ CameraEntity sang CameraDTO
+                    .collect(Collectors.toList());
+
+            System.out.println("Client '" + client.getClientName() + "' (ID: " + client.getId() + ") đã kết nối lại. Tìm thấy " + cameras.size() + " camera.");
+
+            // Trả về thông tin client ID, thông báo và danh sách camera
+>>>>>>> Stashed changes
             ClientDTO clientDTO = new ClientDTO(client);
             return new ClientRegisterResponse(clientDTO, "Client đã đăng ký. Tải lại danh sách camera.", cameras);
 
@@ -81,7 +120,11 @@ public class ClientService {
             newClient.setIpAddress(remoteIpAddress);      // IP hiện tại
 
             // Thiết lập các giá trị mặc định theo CSDL
+<<<<<<< Updated upstream
             newClient.setStatus("ACTIVE");                // Trạng thái ban đầu
+=======
+            newClient.setStatus("online");                // Trạng thái ban đầu
+>>>>>>> Stashed changes
             newClient.setImageWidth(1280);                // Giá trị mặc định
             newClient.setImageHeight(720);                // Giá trị mặc định
             newClient.setCaptureIntervalSeconds(5);       // Giá trị mặc định

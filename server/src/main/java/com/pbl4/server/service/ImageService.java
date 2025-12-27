@@ -11,7 +11,10 @@ import com.pbl4.server.websocket.MyWebSocketHandler;
 
 import jakarta.persistence.EntityNotFoundException; // Dùng exception cụ thể
 import org.springframework.transaction.annotation.Transactional;
+<<<<<<< Updated upstream
 import org.springframework.beans.factory.annotation.Autowired;
+=======
+>>>>>>> Stashed changes
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page; // Cho phân trang
@@ -172,6 +175,7 @@ public class ImageService {
         // Page<> có sẵn hàm map để chuyển đổi
         return entityPage.map(this::toDto); 
     }
+<<<<<<< Updated upstream
     public Page<Image> getImageList(
             Long userId, 
             Pageable pageable, 
@@ -213,6 +217,23 @@ public class ImageService {
             
         return imageEntityPage.map(this::toDto);
     }
+=======
+
+    /**
+     * Lấy danh sách ảnh CÓ PHÂN TRANG theo Camera ID.
+     * Trả về Page<Image> DTO.
+     */
+    @Transactional(readOnly = true)
+    public Page<Image> getImagesByCameraId(int cameraId, Pageable pageable) {
+        // Cần thêm findByCameraId(int cameraId, Pageable pageable) vào ImageRepository
+        Page<ImageEntity> entityPage = imageRepository.findByCameraId(cameraId, pageable);
+        return entityPage.map(this::toDto);
+    }
+
+    /**
+     * Xóa ảnh theo ID (bao gồm xóa file vật lý).
+     */
+>>>>>>> Stashed changes
     @Transactional
     public void deleteImage(Long id) {
         ImageEntity imageEntity = imageRepository.findById(id)
